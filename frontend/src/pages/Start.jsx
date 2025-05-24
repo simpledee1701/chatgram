@@ -23,7 +23,7 @@ function Start() {
   useEffect(() => {
     if (authLoading) return;
     if (isAuthenticated) {
-      navigate("/home");
+      navigate("/profile-setup");
     }
   }, [isAuthenticated, authLoading, navigate]);
 
