@@ -1,15 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, provider } from "../firebase/firebaseConfig";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { setPersistence, browserSessionPersistence, browserLocalPersistence } from "firebase/auth";
 
 function Start() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,7 +21,6 @@ function Start() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    // Only redirect if auth is done loading AND user is authenticated
     if (authLoading) return;
     if (isAuthenticated) {
       navigate("/home");
@@ -29,7 +30,9 @@ function Start() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, provider);
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      const result = await signInWithPopup(auth, provider);
+      setUser(result.user);
     } catch (error) {
       console.error("Error during sign-in:", error.message);
       setErrors({ general: error.message });
@@ -53,7 +56,7 @@ function Start() {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -83,21 +86,41 @@ function Start() {
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
       setLoading(true);
       setErrors({});
 
+      // Set persistence based on remember me
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        setUser(userCredential.user);
       } else {
-        await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+        // Update user profile with name
+        await updateProfile(userCredential.user, {
+          displayName: formData.name
+        });
+        setUser({ ...userCredential.user, displayName: formData.name });
       }
     } catch (error) {
       console.error("Error during authentication:", error.message);
-      setErrors({ general: error.message });
+      let errorMessage = error.message;
+
+      // More user-friendly error messages
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please sign in.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      }
+
+      setErrors({ general: errorMessage });
       setLoading(false);
     }
   };
@@ -192,16 +215,16 @@ function Start() {
               </svg>
             </div>
           </motion.div>
-          
+
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.8 }}
-            className="text-4xl md:text-5xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-300"
+            className="text-4xl md:text-5xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-300 leading-[1.3] overflow-visible relative pb-2"
           >
-            ChatGram
+            Chatgram
           </motion.h1>
-          
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -210,7 +233,7 @@ function Start() {
           >
             Secure messaging with end-to-end encryption and privacy focus.
           </motion.p>
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -468,6 +491,8 @@ function Start() {
                         <input
                           id="remember-me"
                           type="checkbox"
+                          checked={rememberMe}
+                          onChange={() => setRememberMe(!rememberMe)}
                           className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-0 bg-gray-700 rounded"
                         />
                         <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
