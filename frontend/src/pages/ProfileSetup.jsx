@@ -72,6 +72,7 @@ export default function ProfileSetup() {
 
       // Redirect to main chat page
       window.location = '/chat';
+      
     } catch (err) {
       setError(err.message);
       setLoading(false);
