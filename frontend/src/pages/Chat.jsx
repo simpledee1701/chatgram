@@ -12,6 +12,12 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   const db = getFirestore();
 
+  // Cloudinary configuration - Replace with your actual values
+  const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+  const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  
+
   // Fetch all users except current user
   useEffect(() => {
     const q = query(collection(db, 'users'));
@@ -121,10 +127,38 @@ export default function Chat() {
     );
   };
 
-  // Handle image upload (keep your existing implementation)
-  const uploadImage = async (file) => { 
-    // Your existing upload implementation
-    return '';
+  // Upload image to Cloudinary
+  const uploadImageToCloudinary = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'chat-images'); // Optional: organize images in a folder
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message || 'Upload failed');
+      }
+
+      // Return the secure URL of the uploaded image
+      return data.secure_url;
+    } catch (error) {
+      console.error('Error uploading image to Cloudinary:', error);
+      throw error;
+    }
   };
 
   // Handle message submission
@@ -136,7 +170,15 @@ export default function Chat() {
     try {
       let imageUrl = '';
       if (selectedImage) {
-        imageUrl = await uploadImage(selectedImage);
+        try {
+          imageUrl = await uploadImageToCloudinary(selectedImage);
+          console.log('Image uploaded successfully:', imageUrl);
+        } catch (uploadError) {
+          console.error('Failed to upload image:', uploadError);
+          alert('Failed to upload image. Please try again.');
+          setLoading(false);
+          return;
+        }
       }
 
       const currentUser = getCurrentUser();
@@ -160,6 +202,7 @@ export default function Chat() {
       setSelectedImage(null);
     } catch (error) {
       console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
     }
     setLoading(false);
   };
@@ -167,6 +210,19 @@ export default function Chat() {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+      }
+      
+      // Validate file size (e.g., max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size > maxSize) {
+        alert('Image size must be less than 10MB.');
+        return;
+      }
+      
       setSelectedImage(file);
     }
   };
@@ -242,12 +298,23 @@ export default function Chat() {
                           : 'bg-white text-gray-800 rounded-bl-md border'
                       }`}
                     >
-                      {message.imageUrl && (
-                        <img
-                          src={message.imageUrl}
-                          alt="Chat content"
-                          className="mb-2 rounded-lg max-w-full h-48 object-cover"
-                        />
+                      {message.imageUrl && message.imageUrl.trim() !== '' && (
+                        <div className="mb-2">
+                          <img
+                            src={message.imageUrl}
+                            alt="Chat image"
+                            className="rounded-lg max-w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            onError={(e) => {
+                              console.log('Image failed to load:', message.imageUrl);
+                              e.target.style.display = 'none';
+                            }}
+                            onClick={() => {
+                              // Optional: Open image in full size
+                              window.open(message.imageUrl, '_blank');
+                            }}
+                            loading="lazy"
+                          />
+                        </div>
                       )}
 
                       {message.text && (
@@ -283,7 +350,7 @@ export default function Chat() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
                 />
                 <input
                   type="file"
@@ -304,9 +371,16 @@ export default function Chat() {
               <button
                 type="submit"
                 disabled={loading || (!newMessage.trim() && !selectedImage)}
-                className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
               >
-                {loading ? 'Sending...' : 'Send'}
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Sending...
+                  </>
+                ) : (
+                  'Send'
+                )}
               </button>
             </div>
 
