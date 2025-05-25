@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 
@@ -106,12 +106,12 @@ export const AuthProvider = ({ children }) => {
     logout,
     refreshToken,
     isAuthenticated: !!user && !!token,
-    setUser, // Expose setUser to update context user (e.g., from profile setup)
+    setUser,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children} {/* Render children only when auth state is known */}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
