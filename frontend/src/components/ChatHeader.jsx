@@ -14,9 +14,7 @@ const ChatHeader = ({ selectedUser }) => {
   }
 
   return (
-    <header className="bg-gray-800 py-4 px-6 border-b border-gray-700 shadow-lg animate-fade-in-down">
-      <h1 className="text-xl font-bold text-gray-300">Select a user to start chatting</h1>
-    </header>
+    <></>
   );
 };
 

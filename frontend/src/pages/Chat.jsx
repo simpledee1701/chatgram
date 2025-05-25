@@ -165,15 +165,9 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100 font-sans">
-      {/* Top Header Row: MainHeader spanning across the entire top */}
       <MainHeader />
-
-      {/* Main Content Area: Sidebar on left, UsersList & Chat on right */}
-      <div className="flex flex-1 overflow-hidden"> {/* Use overflow-hidden to contain scrolling if necessary */}
-        {/* Sidebar - fixed to the left, takes full height of this flex container */}
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar currentUser={currentUserData} onNavigate={handleSidebarNavigate} />
-
-        {/* The rest of the content (UsersList + Chat Area) */}
         <div className="flex flex-1">
           {/* UsersList column */}
           <UsersList
@@ -197,8 +191,16 @@ export default function Chat() {
             )}
 
             {!selectedUser && (
-              <div className="flex-1 flex items-center justify-center text-gray-400 text-2xl font-light">
-                <p className="animate-fade-in">Select a user to start your conversation.</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-center px-6">
+                <p className="text-2xl font-light mb-3 animate-fade-in">
+                  Select a user to start your conversation.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Your messages are end-to-end encrypted.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Only you and the recipient can read them.
+                </p>
               </div>
             )}
 

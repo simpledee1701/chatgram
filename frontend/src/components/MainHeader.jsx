@@ -4,7 +4,7 @@ import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
 
 const MainHeader = () => {
   return (
-    <header className="flex items-center bg-gray-900 p-2 shadow-xl z-10 animate-fade-in-down-header w-full">
+    <header className="flex items-center bg-gray-900 p-1 shadow-xl z-10 animate-fade-in-down-header w-full">
 
       <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center text-violet-600 text-lg font-bold">
   <IoChatbubbleEllipsesOutline size={20} />
