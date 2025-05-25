@@ -1,157 +1,177 @@
-import { useState } from 'react';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-//import { v4 as uuidv4 } from 'uuid';
+import { useState, useEffect } from 'react';
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { auth } from '../firebase/firebaseConfig';
-// import { Cloudinary } from 'cloudinary-core';
-
-// const cloudinary = new Cloudinary({
-//   cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
-//   api_key: import.meta.env.VITE_CLOUDINARY_API_KEY,
-//   api_secret: import.meta.env.VITE_CLOUDINARY_API_SECRET,
-// });
+import { useNavigate } from 'react-router-dom';
+import { createAvatar } from '@dicebear/core';
+import { micah } from '@dicebear/collection';
 
 export default function ProfileSetup() {
+  const navigate = useNavigate();
   const [chatgramId, setChatgramId] = useState('');
-  const [name, setName] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [name, setName] = useState(auth.currentUser?.displayName || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [photoPreview, setPhotoPreview] = useState('');
+  const [avatarSvg, setAvatarSvg] = useState('');
 
-  const handleImageUpload = async (file) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-      formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-      return data.secure_url;
-    } catch (err) {
-      throw new Error('Failed to upload image');
-    }
-  };
+  useEffect(() => {
+    const generateAndSetAvatar = async () => {
+      const seed = chatgramId || name || auth.currentUser?.email || 'default-chatgram-user';
+      try {
+        const avatar = createAvatar(micah, { // Use the 'micah' style
+          seed: seed,
+        });
+        const dataUri = await avatar.toDataUri(); 
+        setAvatarSvg(dataUri);
+      } catch (err) {
+        console.error("Error generating avatar:", err);
+        setAvatarSvg('');
+      }
+    };
+    generateAndSetAvatar();
+  }, [chatgramId, name, auth.currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    if (!auth.currentUser) {
+      setError("No authenticated user found. Please sign in again.");
+      setLoading(false);
+      return;
+    }
+
+    if (!chatgramId.trim()) {
+        setError("Chatgram ID cannot be empty.");
+        setLoading(false);
+        return;
+    }
+
+    // Basic regex for chatgramId (letters, numbers, underscores, dashes, periods)
+    if (!/^[a-zA-Z0-9_.-]+$/.test(chatgramId)) {
+        setError("Chatgram ID can only contain letters, numbers, underscores, dashes, and periods.");
+        setLoading(false);
+        return;
+    }
+    // Length validation for chatgramId
+    if (chatgramId.length < 3 || chatgramId.length > 20) {
+        setError("Chatgram ID must be between 3 and 20 characters long.");
+        setLoading(false);
+        return;
+    }
+    if (!name.trim()) {
+        setError("Display Name cannot be empty.");
+        setLoading(false);
+        return;
+    }
+
     try {
-      // Check if chatgram ID is unique
       const db = getFirestore();
-      const idDoc = await getDoc(doc(db, 'users', chatgramId));
+
+      // --- 1. Check for duplicate Chatgram ID (by querying) ---
+      // This is crucial because the Firestore document ID is the UID,
+      // but we need to ensure the `chatgramId` field is unique across all users.
+      const chatgramIdQuery = query(
+        collection(db, 'users'),
+        where('chatgramId', '==', chatgramId)
+      );
+      const querySnapshot = await getDocs(chatgramIdQuery);
+
+      if (!querySnapshot.empty) {
+        // If any document matches the chatgramId, it's a duplicate
+        throw new Error('Chatgram ID already taken. Please choose another.');
+      }
+
+      // --- 2. Save user data to Firestore using UID as document ID ---
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
       
-      if (idDoc.exists()) {
-        throw new Error('Chatgram ID already taken');
-      }
-
-      // Upload profile photo if exists
-      let photoURL = '';
-      if (profilePhoto) {
-        photoURL = await handleImageUpload(profilePhoto);
-      }
-
-      // Save user data to Firestore
-      await setDoc(doc(db, 'users', chatgramId), {
+      await setDoc(userDocRef, {
         uid: auth.currentUser.uid,
         email: auth.currentUser.email,
-        chatgramId,
-        name,
-        photoURL,
+        chatgramId: chatgramId, // Store the chosen unique chatgram ID
+        name: name,
+        avatarSvg: avatarSvg, // Save the generated SVG data URI
         createdAt: new Date(),
-      });
+      }, { merge: false }); // Use merge: false to ensure we're creating a new doc or overwriting fully
 
       // Redirect to main chat page
-      window.location = '/chat';
+      navigate('/chat');
       
     } catch (err) {
+      console.error("Profile setup error:", err.message);
       setError(err.message);
       setLoading(false);
     }
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePhoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Complete Your Profile</h1>
+    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4">
+      <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-700">
+        <h1 className="text-3xl font-bold mb-6 text-center text-purple-400">Complete Your Profile</h1>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div className="bg-red-900/30 border border-red-500/50 text-red-300 text-sm text-center p-3 rounded-md">
+              {error}
+            </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Chatgram ID (unique)
+          <div className="flex flex-col items-center mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Your Avatar
             </label>
-            <input
-              type="text"
-              value={chatgramId}
-              onChange={(e) => setChatgramId(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-purple-500">
+              {avatarSvg ? (
+                <img src={avatarSvg} alt="Generated Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-gray-500 text-xs">Generating...</div>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Avatar generated based on your Chatgram ID.
+            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Display Name
+            <label htmlFor="chatgramId" className="block text-sm font-medium text-gray-300 mb-1">
+              Chatgram ID <span className="text-red-400">*</span>
             </label>
             <input
+              id="chatgramId"
+              type="text"
+              value={chatgramId}
+              // Enforce lowercase and remove spaces for chatgramId
+              onChange={(e) => setChatgramId(e.target.value.toLowerCase().replace(/\s/g, ''))}
+              required
+              placeholder="e.g., john.doe123"
+              className="w-full px-4 py-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder-gray-500"
+              maxLength="20" // Limit length for chatgramId
+            />
+            <p className="text-xs text-gray-500 mt-1">
+                Unique identifier for your profile (3-20 characters). Letters, numbers, underscores, dashes, and periods only.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
+              Display Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., John Doe"
+              className="w-full px-4 py-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder-gray-500"
+              maxLength="50" // Example: Limit display name length
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Profile Photo
-            </label>
-            <div className="flex items-center space-x-4">
-              {photoPreview && (
-                <img
-                  src={photoPreview}
-                  alt="Preview"
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-            </div>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            disabled={loading || !chatgramId.trim() || !name.trim() || error} // Disable if there's an error
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-md hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
           >
             {loading ? 'Saving...' : 'Complete Setup'}
           </button>

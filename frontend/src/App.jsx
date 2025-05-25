@@ -24,14 +24,8 @@ function App() {
             <ProtectedRoute>
               <ProfileSetup />
             </ProtectedRoute>
-          }/>
-          <Route
-          path='/chat'
-          element={
-            <ProtectedRoute>
-              <Chat />
-            </ProtectedRoute>
-          }/>
+          }
+        />
       </Routes>
     </>
   );

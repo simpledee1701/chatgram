@@ -1,142 +1,83 @@
 import { useNavigate } from "react-router-dom";
-import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../firebase/firebaseConfig";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { setPersistence, browserSessionPersistence, browserLocalPersistence } from "firebase/auth";
+import { getFirestore, doc, getDoc } from 'firebase/firestore'
 
 function Start() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading: authLoading, setUser } = useAuth();
+  const { isAuthenticated, loading: authLoading, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
   const [rememberMe, setRememberMe] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: ''
-  });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (authLoading) return;
-    if (isAuthenticated) {
-      navigate("/profile-setup");
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+    const checkUserProfile = async () => {
+      if (authLoading) return; // Wait until Firebase auth state is resolved
+
+      if (isAuthenticated && auth.currentUser) {
+        setLoading(true); // Show loading while checking Firestore
+        const db = getFirestore();
+        const userDocRef = doc(db, 'users', auth.currentUser.uid); // Use UID as doc ID
+        try {
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            navigate("/chat"); // User profile exists, go to chat
+          } else {
+            navigate("/profile-setup"); // User profile doesn't exist, go to setup
+          }
+        } catch (firestoreError) {
+          console.error("Error checking user profile in Firestore:", firestoreError.message);
+          setErrors({ general: "Failed to check user profile. Please try again." });
+          // If there's a Firestore error, keep user on start page or handle appropriately
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    checkUserProfile();
+  }, [isAuthenticated, authLoading, navigate]); // Depend on isAuthenticated and authLoading
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
+      setErrors({}); // Clear previous errors
+
+      // Set persistence based on remember me checkbox
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       const result = await signInWithPopup(auth, provider);
-      setUser(result.user);
+      setUser(result.user); // Update the user in the AuthContext
+
+      // After successful sign-in, the useEffect will handle redirection based on profile existence
     } catch (error) {
-      console.error("Error during sign-in:", error.message);
-      setErrors({ general: error.message });
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!isLogin) {
-      if (!formData.name) {
-        newErrors.name = 'Name is required';
-      }
-      if (!formData.confirmPassword) {
-        newErrors.confirmPassword = 'Please confirm your password';
-      } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleEmailAuth = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    try {
-      setLoading(true);
-      setErrors({});
-
-      // Set persistence based on remember me
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-
-      if (isLogin) {
-        const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-        setUser(userCredential.user);
-      } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        // Update user profile with name
-        await updateProfile(userCredential.user, {
-          displayName: formData.name
-        });
-        setUser({ ...userCredential.user, displayName: formData.name });
-      }
-    } catch (error) {
-      console.error("Error during authentication:", error.message);
+      console.error("Error during Google sign-in:", error.message);
       let errorMessage = error.message;
 
       // More user-friendly error messages
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered. Please sign in.';
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password. Please try again.';
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          errorMessage = 'Google sign-in popup was closed. Please try again.';
+          break;
+        case 'auth/cancelled-popup-request':
+          errorMessage = 'Another Google sign-in request is in progress. Please wait.';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your internet connection.';
+          break;
+        default:
+          errorMessage = 'An unexpected error occurred during Google sign-in.';
       }
-
       setErrors({ general: errorMessage });
       setLoading(false);
     }
   };
 
-  const toggleForm = () => {
-    setIsLogin(!isLogin);
-    setFormData({
-      email: '',
-      password: '',
-      confirmPassword: '',
-      name: ''
-    });
-    setErrors({});
-  };
-
-  if (authLoading) {
+  // If authentication is still loading, show a simple spinner
+  if (authLoading || loading) { // Include local loading state for Firestore check
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-purple-400">
@@ -147,6 +88,11 @@ function Start() {
         </div>
       </div>
     );
+  }
+
+  // Only show the sign-in button if not authenticated
+  if (isAuthenticated) {
+    return null; // Or a message "Redirecting..."
   }
 
   return (
@@ -280,7 +226,7 @@ function Start() {
         <div className="max-w-md w-full px-4 sm:px-8">
           <AnimatePresence mode="wait">
             <motion.div
-              key={isLogin ? 'login' : 'signup'}
+              key="google-auth" // Fixed key as we only have one main form
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -293,10 +239,10 @@ function Start() {
                 className="text-center mb-10"
               >
                 <h2 className="text-3xl font-bold text-white mb-2">
-                  {isLogin ? 'Welcome Back' : 'Create Account'}
+                  Sign In to Chatgram
                 </h2>
                 <p className="text-gray-400">
-                  {isLogin ? 'Sign in to access your secure messages' : 'Join us for secure messaging'}
+                  Access your secure messages
                 </p>
               </motion.div>
 
@@ -334,7 +280,7 @@ function Start() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      <span className="text-purple-400 font-medium">Processing...</span>
+                      <span className="text-purple-400 font-medium">Authenticating...</span>
                     </div>
                   ) : (
                     <>
@@ -352,7 +298,7 @@ function Start() {
                           d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2936293 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z"
                         />
                         <path
-                          fill="#4A90E2"
+                          fill="#4285F4"
                           d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5818182 23.1272727,9.90909091 L12,9.90909091 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"
                         />
                         <path
@@ -367,198 +313,24 @@ function Start() {
                   )}
                 </button>
 
-                <div className="flex items-center my-6">
-                  <div className="flex-1 h-px bg-gray-700"></div>
-                  <p className="mx-4 text-sm text-gray-500">or {isLogin ? 'sign in' : 'sign up'} with email</p>
-                  <div className="flex-1 h-px bg-gray-700"></div>
+                {errors.general && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mt-4 text-center">
+                    <p className="text-red-400 text-sm">{errors.general}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center mt-6">
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() => setRememberMe(!rememberMe)}
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-0 bg-gray-700 rounded"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
+                    Keep me signed in
+                  </label>
                 </div>
-
-                {/* Email/Password Form */}
-                <form onSubmit={handleEmailAuth} className="space-y-4">
-                  {!isLogin && (
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="Full Name"
-                        className={`w-full px-5 py-4 bg-gray-700/50 rounded-xl border-0 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-gray-100 pl-12 placeholder-gray-500 ${errors.name ? 'ring-2 ring-red-500' : ''}`}
-                      />
-                      <svg
-                        className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 transform -translate-y-1/2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                      {errors.name && <p className="text-red-400 text-sm mt-1 ml-1">{errors.name}</p>}
-                    </div>
-                  )}
-
-                  <div className="relative">
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="Email address"
-                      className={`w-full px-5 py-4 bg-gray-700/50 rounded-xl border-0 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-gray-100 pl-12 placeholder-gray-500 ${errors.email ? 'ring-2 ring-red-500' : ''}`}
-                    />
-                    <svg
-                      className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 transform -translate-y-1/2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
-                    </svg>
-                    {errors.email && <p className="text-red-400 text-sm mt-1 ml-1">{errors.email}</p>}
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder="Password"
-                      className={`w-full px-5 py-4 bg-gray-700/50 rounded-xl border-0 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-gray-100 pl-12 placeholder-gray-500 ${errors.password ? 'ring-2 ring-red-500' : ''}`}
-                    />
-                    <svg
-                      className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 transform -translate-y-1/2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                    {errors.password && <p className="text-red-400 text-sm mt-1 ml-1">{errors.password}</p>}
-                  </div>
-
-                  {!isLogin && (
-                    <div className="relative">
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        placeholder="Confirm Password"
-                        className={`w-full px-5 py-4 bg-gray-700/50 rounded-xl border-0 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-gray-100 pl-12 placeholder-gray-500 ${errors.confirmPassword ? 'ring-2 ring-red-500' : ''}`}
-                      />
-                      <svg
-                        className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 transform -translate-y-1/2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
-                      {errors.confirmPassword && <p className="text-red-400 text-sm mt-1 ml-1">{errors.confirmPassword}</p>}
-                    </div>
-                  )}
-
-                  {errors.general && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                      <p className="text-red-400 text-sm">{errors.general}</p>
-                    </div>
-                  )}
-
-                  {isLogin && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <input
-                          id="remember-me"
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={() => setRememberMe(!rememberMe)}
-                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-0 bg-gray-700 rounded"
-                        />
-                        <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
-                          Remember me
-                        </label>
-                      </div>
-                      <button
-                        type="button"
-                        className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center">
-                        <svg
-                          className="animate-spin h-5 w-5 mr-2"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        {isLogin ? 'Signing in...' : 'Creating account...'}
-                      </div>
-                    ) : (
-                      isLogin ? 'Sign in' : 'Create account'
-                    )}
-                  </button>
-                </form>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="text-center mt-8"
-              >
-                <p className="text-gray-500">
-                  {isLogin ? "Don't have an account? " : "Already have an account? "}
-                  <button
-                    onClick={toggleForm}
-                    className="text-purple-400 font-medium hover:text-purple-300 transition-colors"
-                  >
-                    {isLogin ? 'Sign up' : 'Sign in'}
-                  </button>
-                </p>
               </motion.div>
             </motion.div>
           </AnimatePresence>

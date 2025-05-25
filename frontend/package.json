@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dicebear/collection": "^9.2.2",
+    "@dicebear/core": "^9.2.2",
     "cloudinary": "^2.6.1",
     "firebase": "^11.8.1",
     "framer-motion": "^12.12.2",

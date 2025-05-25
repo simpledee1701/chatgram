@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
+            photoURL: firebaseUser.photoURL, // Firebase's photoURL (from Google)
             emailVerified: firebaseUser.emailVerified,
           };
           
@@ -36,6 +36,11 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('userData', JSON.stringify(userData));
         } catch (error) {
           console.error('Error getting ID token:', error);
+          // Handle token error, e.g., force re-login
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
         }
       } else {
         setUser(null);
@@ -56,8 +61,12 @@ export const AuthProvider = ({ children }) => {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('userData');
+        localStorage.removeItem('userData'); // Clear bad data
       }
+    } else {
+      // If no stored token/user, ensure loading state is set to true initially
+      // to prevent flashing content before onAuthStateChanged resolves
+      setLoading(true);
     }
 
     return () => unsubscribe();
@@ -97,11 +106,12 @@ export const AuthProvider = ({ children }) => {
     logout,
     refreshToken,
     isAuthenticated: !!user && !!token,
+    setUser, // Expose setUser to update context user (e.g., from profile setup)
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {!loading && children} {/* Render children only when auth state is known */}
     </AuthContext.Provider>
   );
 };
