@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { auth } from '../firebase/firebaseConfig';
+import { auth } from '../firebase/firebaseConfig'; // Ensure this path is correct
 import UsersList from '../components/UsersList';
 import ChatHeader from '../components/ChatHeader';
 import MessagesList from '../components/MessagesList';
 import MessageInput from '../components/MessageInput';
-import { useCloudinary } from '../hooks/useCloudinary';
+import { useCloudinary } from '../hooks/useCloudinary'; // Ensure this hook is correctly implemented
 
 export default function Chat() {
   const [users, setUsers] = useState([]);
@@ -16,9 +16,9 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const db = getFirestore();
-  const { uploadImageToCloudinary } = useCloudinary();
+  const { uploadImageToCloudinary } = useCloudinary(); // Make sure useCloudinary is defined and works
 
-  // Fetch all users except current user
+  // Fetch all users
   useEffect(() => {
     const q = query(collection(db, 'users'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -26,7 +26,6 @@ export default function Chat() {
         id: doc.id,
         ...doc.data()
       }));
-      // Include ALL users (including current user) for avatar lookup
       setUsers(usersData);
     });
     return () => unsubscribe();
@@ -137,23 +136,26 @@ export default function Chat() {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select a valid image file.');
+        e.target.value = null; // Clear the input
         return;
       }
-      
+
       // Validate file size (e.g., max 10MB)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
       if (file.size > maxSize) {
         alert('Image size must be less than 10MB.');
+        e.target.value = null; // Clear the input
         return;
       }
-      
+
       setSelectedImage(file);
+      e.target.value = null; // Clear the input so same file can be selected again
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <UsersList 
+    <div className="flex h-screen bg-gray-900 text-gray-100 font-sans">
+      <UsersList
         users={users}
         selectedUser={selectedUser}
         onUserSelect={setSelectedUser}
@@ -170,6 +172,12 @@ export default function Chat() {
             currentUserUid={auth.currentUser?.uid}
             messagesEndRef={messagesEndRef}
           />
+        )}
+
+        {!selectedUser && (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-2xl font-light">
+            <p className="animate-fade-in">Select a user to start your conversation.</p>
+          </div>
         )}
 
         {selectedUser && (
