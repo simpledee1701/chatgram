@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import Avatar from './Avatar';
 
 const ChatHeader = ({
@@ -10,10 +11,32 @@ const ChatHeader = ({
   typingStatus
 }) => {
   const [showOptions, setShowOptions] = useState(false);
+  const [currentGroup, setCurrentGroup] = useState(selectedGroup);
+  const db = getFirestore();
+
+  // Listen for real-time updates to the selected group
+  useEffect(() => {
+    if (selectedGroup?.id) {
+      const unsubscribe = onSnapshot(doc(db, 'groups', selectedGroup.id), (doc) => {
+        if (doc.exists()) {
+          setCurrentGroup({ id: doc.id, ...doc.data() });
+        }
+      });
+
+      return () => unsubscribe();
+    } else {
+      setCurrentGroup(selectedGroup);
+    }
+  }, [db, selectedGroup?.id]);
+
+  // Update local state when selectedGroup prop changes (switching between groups)
+  useEffect(() => {
+    setCurrentGroup(selectedGroup);
+  }, [selectedGroup]);
 
   const getStatusText = () => {
-    if (selectedGroup) {
-      return `${selectedGroup.members.length} members`;
+    if (currentGroup) {
+      return `${currentGroup.members.length} members`;
     }
 
     if (!selectedUser) return '';
@@ -52,15 +75,15 @@ const ChatHeader = ({
   return (
     <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
       <div className="flex items-center">
-        {selectedGroup ? (
+        {currentGroup ? (
           <>
             <div className="bg-gray-600 rounded-full h-10 w-10 flex items-center justify-center mr-3">
               👥
             </div>
             <div>
-              <h2 className="text-white font-semibold">{selectedGroup.name}</h2>
+              <h2 className="text-white font-semibold">{currentGroup.name}</h2>
               <p className="text-xs text-gray-400">
-                {selectedGroup.members.length} members
+                {currentGroup.members.length} members
               </p>
             </div>
           </>
@@ -82,7 +105,7 @@ const ChatHeader = ({
         ) : null}
       </div>
 
-      {selectedGroup && (
+      {currentGroup && (
         <div className="relative">
           <button
             onClick={() => setShowOptions(!showOptions)}

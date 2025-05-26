@@ -41,7 +41,7 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
               {isGroup && !isCurrentUser && (
                 <div className="flex items-center mb-1 space-x-2 overflow-hidden">
                   <div className="w-5 h-5 flex-shrink-0">
-                    <Avatar user={sender} size="xs" />
+                    <Avatar user={sender} size="w-5 h-5" />
                   </div>
                   <span className="text-xs text-gray-300 truncate max-w-[150px]">
                     {sender?.name || 'Unknown user'}

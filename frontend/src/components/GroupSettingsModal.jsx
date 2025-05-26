@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { getFirestore, doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import Avatar from './Avatar';
 
 const GroupSettingsModal = ({ group, users, currentUser, onClose }) => {
@@ -7,16 +7,27 @@ const GroupSettingsModal = ({ group, users, currentUser, onClose }) => {
   const [newMembers, setNewMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentGroup, setCurrentGroup] = useState(group); // Local state for real-time updates
 
-  // Get fresh group data from props
-  const currentGroupMembers = group.members || [];
+  // Listen for real-time updates to the group
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'groups', group.id), (doc) => {
+      if (doc.exists()) {
+        setCurrentGroup({ id: doc.id, ...doc.data() });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [db, group.id]);
+
+  // Get current group members from the real-time updated group data
+  const currentGroupMembers = currentGroup.members || [];
   
   const availableUsers = users.filter(user => 
     !currentGroupMembers.includes(user.uid) && 
     user.uid !== currentUser.uid
   );
 
-  // Add missing handleAddMembers function
   const handleAddMembers = async () => {
     if (newMembers.length === 0) return;
     setLoading(true);
@@ -37,8 +48,8 @@ const GroupSettingsModal = ({ group, users, currentUser, onClose }) => {
   };
 
   const handleRemoveMember = async (memberId) => {
-    if (memberId === group.admin) return;
-    if (currentUser.uid !== group.admin) {
+    if (memberId === currentGroup.admin) return;
+    if (currentUser.uid !== currentGroup.admin) {
       setError('Only admin can remove members');
       return;
     }
@@ -78,12 +89,12 @@ const GroupSettingsModal = ({ group, users, currentUser, onClose }) => {
                     <Avatar user={user} size="small" />
                     <span className="ml-2 text-sm">
                       {user?.name}
-                      {uid === group.admin && (
+                      {uid === currentGroup.admin && (
                         <span className="ml-1 text-xs text-indigo-400">(Admin)</span>
                       )}
                     </span>
                   </div>
-                  {uid !== group.admin && currentUser.uid === group.admin && (
+                  {uid !== currentGroup.admin && currentUser.uid === currentGroup.admin && (
                     <button
                       onClick={() => handleRemoveMember(uid)}
                       className="text-red-400 hover:text-red-300 text-xs"
@@ -98,7 +109,7 @@ const GroupSettingsModal = ({ group, users, currentUser, onClose }) => {
           </div>
         </div>
 
-        {currentUser.uid === group.admin && (
+        {currentUser.uid === currentGroup.admin && (
           <div className="mb-4">
             <h4 className="text-sm font-semibold text-gray-400 mb-2">Add Members</h4>
             <select
