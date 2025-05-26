@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import Avatar from './Avatar';
+import ChatSummarizerModal from './ChatSummarizerModal';
 
 const ChatHeader = ({
   selectedUser,
@@ -12,6 +13,7 @@ const ChatHeader = ({
   typingStatus
 }) => {
   const [showOptions, setShowOptions] = useState(false);
+  const [showSummarizer, setShowSummarizer] = useState(false);
   const [currentGroup, setCurrentGroup] = useState(selectedGroup);
   const db = getFirestore();
 
@@ -23,17 +25,15 @@ const ChatHeader = ({
           setCurrentGroup({ id: doc.id, ...doc.data() });
         }
       });
-
       return () => unsubscribe();
     } else {
       setCurrentGroup(selectedGroup);
     }
   }, [db, selectedGroup?.id]);
 
-  // Update local state when selectedGroup prop changes
   useEffect(() => {
     setCurrentGroup(selectedGroup);
-  }, [selectedGroup]);
+  }, [selectedGroup])
 
   const getStatusText = () => {
     if (currentGroup) {
@@ -114,29 +114,53 @@ const ChatHeader = ({
         ) : null}
       </div>
 
-      {currentGroup && (
-        <div className="relative">
+      
+      <div className="flex items-center gap-4">
+        {(selectedUser || currentGroup || selectedAI) && (
           <button
-            onClick={() => setShowOptions(!showOptions)}
-            className="text-gray-400 hover:text-white p-2"
+            onClick={() => setShowSummarizer(true)}
+            className="p-2 hover:bg-gray-700 rounded flex items-center gap-2"
+            title="Generate chat summary"
           >
-            ⚙️
+            <span>📝</span>
+            <span className="hidden md:inline">Summarize</span>
           </button>
+        )}
 
-          {showOptions && (
-            <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
-              <button
-                onClick={() => {
-                  onGroupSettings();
-                  setShowOptions(false);
-                }}
-                className="w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-700"
-              >
-                Group Settings
-              </button>
-            </div>
-          )}
-        </div>
+        {currentGroup && (
+          <div className="relative">
+            <button
+              onClick={() => setShowOptions(!showOptions)}
+              className="text-gray-400 hover:text-white p-2"
+            >
+              ⚙️
+            </button>
+
+            {showOptions && (
+              <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+                <button
+                  onClick={() => {
+                    onGroupSettings();
+                    setShowOptions(false);
+                  }}
+                  className="w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-700"
+                >
+                  Group Settings
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showSummarizer && (
+        <ChatSummarizerModal
+          onClose={() => setShowSummarizer(false)}
+          selectedUser={selectedUser}
+          selectedGroup={currentGroup}
+          selectedAI={selectedAI}
+          currentUser={currentUser}
+        />
       )}
     </div>
   );
