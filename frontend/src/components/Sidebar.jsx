@@ -16,14 +16,14 @@ const Sidebar = ({ currentUser, onNavigate }) => {
   };
 
   return (
-    <div className="w-15 bg-gray-900 flex flex-col items-center py-6 shadow-xl z-20 animate-fade-in-left-sidebar h-full">
+    <div className="w-11 bg-gray-900 flex flex-col items-center py-6 shadow-xl z-20 animate-fade-in-left-sidebar h-full">
       <nav className="flex flex-col space-y-6 flex-grow mt-4">
         <button
           onClick={() => onNavigate('profile')}
           className="p-5 rounded-full hover:bg-violet-700 transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-violet-500"
           title="Profile"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </button>
@@ -33,7 +33,7 @@ const Sidebar = ({ currentUser, onNavigate }) => {
           className="p-5 rounded-full hover:bg-violet-700 transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-violet-500"
           title="AI Chat"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 7h2m-2 10h2M17 7h2m-2 10h2M11 3v18m-4-6h8m-8-6h8" />
           </svg>
         </button>

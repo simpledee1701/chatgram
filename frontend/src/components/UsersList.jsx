@@ -67,7 +67,7 @@ const UsersList = ({
     <div className="w-1/4 bg-gray-800 border-r border-gray-900 overflow-hidden rounded-tl-2xl rounded-bl-2xl shadow-lg relative">
       <div className="p-3 bg-gray-800 border-b border-gray-700">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-bold text-gray-100 tracking-wide">Chatgram</h2>
+          <h2 className="text-lg font-bold text-gray-100 tracking-wide">Chats</h2>
 
           <div className="relative" ref={menuRef}>
             <button

@@ -8,6 +8,7 @@ import MessageInput from '../components/MessageInput';
 import GroupSettingsModal from '../components/GroupSettingsModal';
 import { useCloudinary } from '../hooks/useCloudinary';
 import Sidebar from '../components/Sidebar'
+import MainHeader from '../components/MainHeader'
 
 export default function Chat() {
   const [users, setUsers] = useState([]);
@@ -143,8 +144,10 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
+      <MainHeader/>
       {/* Main Content Row */}
       <div className="flex flex-1 overflow-hidden">
+
 
         {/* Sidebar with width w-6 */}
         <div className="w-19 bg-gray-800">
