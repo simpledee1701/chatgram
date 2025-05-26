@@ -177,9 +177,9 @@ export default function Chat() {
         setAiLoading(true);
         try {
           const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-          
+
           let prompt = newMessage;
-          
+
           // If there's an image, create a multimodal prompt
           if (selectedImage && imageUrl) {
             // Convert image to base64 for Gemini
@@ -200,7 +200,7 @@ export default function Chat() {
                 }
               }
             ]);
-            
+
             const aiResponse = await result.response;
             const aiText = aiResponse.text();
 
@@ -229,7 +229,7 @@ export default function Chat() {
           }
         } catch (error) {
           console.error('AI Error:', error);
-          
+
           // Save error message as AI response
           const errorMessage = {
             text: "Sorry, I encountered an error while processing your request. Please try again.",
@@ -287,7 +287,10 @@ export default function Chat() {
       <MainHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="w-19 bg-gray-800">
-          <Sidebar onNavigate={handleNavigate} />
+          <Sidebar
+            currentUser={currentUserData}
+            onNavigate={handleNavigate}
+          />
         </div>
 
         <div className="flex flex-1 overflow-hidden">
