@@ -5,6 +5,7 @@ import Avatar from './Avatar';
 const ChatHeader = ({
   selectedUser,
   selectedGroup,
+  selectedAI,
   currentUser,
   onGroupSettings,
   userStatus,
@@ -29,7 +30,7 @@ const ChatHeader = ({
     }
   }, [db, selectedGroup?.id]);
 
-  // Update local state when selectedGroup prop changes (switching between groups)
+  // Update local state when selectedGroup prop changes
   useEffect(() => {
     setCurrentGroup(selectedGroup);
   }, [selectedGroup]);
@@ -41,12 +42,12 @@ const ChatHeader = ({
 
     if (!selectedUser) return '';
 
-    // Check typing status first
+    // Typing status
     if (typingStatus[selectedUser.uid]?.isTyping) {
       return 'typing...';
     }
 
-    // Then check online status
+    // Online/offline status
     const status = userStatus[selectedUser.uid]?.status;
     if (status === 'online') {
       return 'Online';
@@ -97,9 +98,17 @@ const ChatHeader = ({
             />
             <div className="ml-3">
               <h2 className="text-white font-semibold">{selectedUser.name}</h2>
-              <p className="text-xs text-gray-400">
-                {getStatusText()}
-              </p>
+              <p className="text-xs text-gray-400">{getStatusText()}</p>
+            </div>
+          </>
+        ) : selectedAI ? (
+          <>
+            <div className="bg-indigo-500 rounded-full h-10 w-10 flex items-center justify-center text-white text-lg font-bold mr-3">
+              🤖
+            </div>
+            <div>
+              <h2 className="text-white font-semibold">{selectedAI.name || 'AI Assistant'}</h2>
+              <p className="text-xs text-gray-400">AI Chat</p>
             </div>
           </>
         ) : null}
