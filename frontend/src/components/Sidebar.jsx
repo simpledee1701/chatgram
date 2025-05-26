@@ -20,7 +20,7 @@ const Sidebar = ({ currentUser, onNavigate }) => {
       <nav className="flex flex-col space-y-6 flex-grow mt-4">
         <button
           onClick={() => onNavigate('profile')}
-          className="p-3 rounded-full hover:bg-violet-700 transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="p-5 rounded-full hover:bg-violet-700 transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-violet-500"
           title="Profile"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -30,7 +30,7 @@ const Sidebar = ({ currentUser, onNavigate }) => {
 
         <button
           onClick={() => onNavigate('ai')}
-          className="p-3 rounded-full hover:bg-violet-700 transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="p-5 rounded-full hover:bg-violet-700 transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-violet-500"
           title="AI Chat"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

@@ -7,6 +7,7 @@ import MessagesList from '../components/MessagesList';
 import MessageInput from '../components/MessageInput';
 import GroupSettingsModal from '../components/GroupSettingsModal';
 import { useCloudinary } from '../hooks/useCloudinary';
+import Sidebar from '../components/Sidebar'
 
 export default function Chat() {
   const [users, setUsers] = useState([]);
@@ -44,12 +45,12 @@ export default function Chat() {
   // Fetch groups
   useEffect(() => {
     if (!auth.currentUser) return;
-    
+
     const q = query(
       collection(db, 'groups'),
       where('members', 'array-contains', auth.currentUser.uid)
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const groupsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -142,51 +143,61 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
+      {/* Main Content Row */}
       <div className="flex flex-1 overflow-hidden">
-        <UsersList
-          users={users}
-          groups={groups}
-          selectedUser={selectedUser}
-          selectedGroup={selectedGroup}
-          onUserSelect={(user) => {
-            setSelectedUser(user);
-            setSelectedGroup(null);
-          }}
-          onGroupSelect={(group) => {
-            setSelectedGroup(group);
-            setSelectedUser(null);
-          }}
-          currentUserUid={auth.currentUser?.uid}
-          messages={messages}
-          onGroupCreate={(newGroup) => setGroups(prev => [...prev, newGroup])}
-        />
 
-        <div className="flex flex-col flex-1">
-          <ChatHeader
+        {/* Sidebar with width w-6 */}
+        <div className="w-19 bg-gray-800">
+          <Sidebar />
+        </div>
+
+        {/* Main Panel */}
+        <div className="flex flex-1 overflow-hidden">
+          <UsersList
+            users={users}
+            groups={groups}
             selectedUser={selectedUser}
             selectedGroup={selectedGroup}
-            currentUser={currentUserData}
-            onGroupSettings={() => setShowGroupSettings(true)}
-          />
-
-          <MessagesList
-            messages={messages}
-            users={users}
+            onUserSelect={(user) => {
+              setSelectedUser(user);
+              setSelectedGroup(null);
+            }}
+            onGroupSelect={(group) => {
+              setSelectedGroup(group);
+              setSelectedUser(null);
+            }}
             currentUserUid={auth.currentUser?.uid}
-            messagesEndRef={messagesEndRef}
-            isGroup={!!selectedGroup}
+            messages={messages}
+            onGroupCreate={(newGroup) => setGroups(prev => [...prev, newGroup])}
           />
 
-          {(selectedUser || selectedGroup) && (
-            <MessageInput
-              newMessage={newMessage}
-              setNewMessage={setNewMessage}
-              selectedImage={selectedImage}
-              setSelectedImage={setSelectedImage}
-              loading={loading}
-              onSubmit={handleSubmit}
+          <div className="flex flex-col flex-1">
+            <ChatHeader
+              selectedUser={selectedUser}
+              selectedGroup={selectedGroup}
+              currentUser={currentUserData}
+              onGroupSettings={() => setShowGroupSettings(true)}
             />
-          )}
+
+            <MessagesList
+              messages={messages}
+              users={users}
+              currentUserUid={auth.currentUser?.uid}
+              messagesEndRef={messagesEndRef}
+              isGroup={!!selectedGroup}
+            />
+
+            {(selectedUser || selectedGroup) && (
+              <MessageInput
+                newMessage={newMessage}
+                setNewMessage={setNewMessage}
+                selectedImage={selectedImage}
+                setSelectedImage={setSelectedImage}
+                loading={loading}
+                onSubmit={handleSubmit}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -200,4 +211,5 @@ export default function Chat() {
       )}
     </div>
   );
+
 }
