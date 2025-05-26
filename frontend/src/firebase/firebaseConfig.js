@@ -1,7 +1,9 @@
+// firebaseConfig.js
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,4 +21,7 @@ const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
-export { auth, provider, db, rtdb };
+// Initialize Google AI directly
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
+
+export { auth, provider, db, rtdb, genAI };

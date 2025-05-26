@@ -100,3 +100,18 @@ html, body, #root {
 .animate-fade-in {
   animation: fade-in 0.5s ease-out forwards;
 }
+
+.ai-message {
+  background: #4A5568;
+  align-self: flex-start;
+}
+
+.user-message {
+  background: #2B6CB0;
+  align-self: flex-end;
+}
+
+.ai-typing-indicator {
+  color: #718096;
+  font-style: italic;
+}

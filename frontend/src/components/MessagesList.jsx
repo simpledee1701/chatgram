@@ -2,7 +2,7 @@ import React from 'react';
 import Avatar from './Avatar';
 
 
-const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup }) => {
+const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup,isAI  }) => {
   const getUserById = (uid) => users.find(user => user.uid === uid);
 
   // Safe timestamp conversion
@@ -24,21 +24,32 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
       {messages.map((message) => {
         const isCurrentUser = message.uid === currentUserUid;
         const sender = getUserById(message.uid);
+        const isAIMessage = message.isAI;
         const timestamp = getTimestamp(message.timestamp);
 
         return (
           <div
             key={message.id}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${isCurrentUser ? 'justify-end' : 
+              isAIMessage ? 'justify-start' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser
-                  ? 'bg-indigo-600 ml-auto'
-                  : 'bg-gray-800'
-                }`}
+              className={`max-w-[70%] rounded-lg p-3 ${
+                isCurrentUser ? 'bg-indigo-600 ml-auto' :
+                isAIMessage ? 'bg-gray-700' : 'bg-gray-800'
+              }`}
             >
-              {/* Sender info */}
-              {isGroup && !isCurrentUser && (
+              {/* AI Label */}
+              {isAIMessage && (
+                <div className="flex items-center mb-1 space-x-2">
+                  <span className="text-xs text-violet-400 font-medium">
+                    AI Assistant:
+                  </span>
+                </div>
+              )}
+
+              {/* Sender info - hidden for AI messages */}
+              {!isAIMessage && isGroup && !isCurrentUser && (
                 <div className="flex items-center mb-1 space-x-2 overflow-hidden">
                   <div className="w-5 h-5 flex-shrink-0">
                     <Avatar user={sender} size="w-5 h-5" />
@@ -57,10 +68,12 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                   className="max-w-full h-32 object-cover rounded mb-2"
                 />
               )}
-              <p className="text-white text-sm">{message.text}</p>
+              <p className={`text-sm ${isAIMessage ? 'text-gray-100' : 'text-white'}`}>
+                {message.text}
+              </p>
 
               {/* Timestamp */}
-              <div className="flex items-center justify-end mt-1">
+              <div className={`flex mt-1 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
                 <span className="text-xs text-gray-300">
                   {timestamp.toLocaleTimeString([], {
                     hour: '2-digit',

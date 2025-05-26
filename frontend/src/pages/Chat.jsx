@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
-import { auth, db, rtdb } from '../firebase/firebaseConfig';
+import { auth, db, rtdb, genAI } from '../firebase/firebaseConfig';
 import UsersList from '../components/UsersList';
 import ChatHeader from '../components/ChatHeader';
 import MessagesList from '../components/MessagesList';
@@ -25,10 +25,11 @@ export default function Chat() {
   const [currentUserData, setCurrentUserData] = useState(null);
   const [typingStatus, setTypingStatus] = useState({});
   const [userStatus, setUserStatus] = useState({});
+  const [selectedAI, setSelectedAI] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const { uploadImageToCloudinary } = useCloudinary();
 
-  // Track current user's presence
   usePresence(rtdb);
 
   // Fetch users
@@ -86,6 +87,13 @@ export default function Chat() {
         orderBy('timestamp', 'asc'),
         limit(50)
       );
+    } else if (selectedAI) {
+      q = query(
+        collection(db, 'aiMessages'),
+        where('userId', '==', auth.currentUser?.uid),
+        orderBy('timestamp', 'asc'),
+        limit(50)
+      );
     } else {
       setMessages([]);
       return;
@@ -95,16 +103,16 @@ export default function Chat() {
       const messagesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate()
+        timestamp: doc.data().timestamp?.toDate(),
+        isAI: doc.data().isAI || false
       }));
       setMessages(messagesData);
     });
 
     return () => unsubscribe();
-  }, [db, selectedUser, selectedGroup]);
+  }, [db, selectedUser, selectedGroup, selectedAI]);
 
-  // Track other users' statuses
-  // In your Chat component
+  // Track user status
   useEffect(() => {
     if (!selectedUser?.uid) return;
 
@@ -145,7 +153,7 @@ export default function Chat() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !selectedImage) || (!selectedUser && !selectedGroup)) return;
+    if ((!newMessage.trim() && !selectedImage) || (!selectedUser && !selectedGroup && !selectedAI)) return;
 
     setLoading(true);
     try {
@@ -154,24 +162,106 @@ export default function Chat() {
         imageUrl = await uploadImageToCloudinary(selectedImage);
       }
 
-      const messageData = {
-        text: newMessage,
-        timestamp: serverTimestamp(),
-        uid: auth.currentUser.uid,
-        photoURL: currentUserData?.photoURL || null,
-        displayName: currentUserData?.name || auth.currentUser.displayName || 'Unknown',
-        imageUrl
-      };
+      if (selectedAI) {
+        // Save user message to AI conversation
+        const userMessage = {
+          text: newMessage,
+          timestamp: serverTimestamp(),
+          userId: auth.currentUser.uid,
+          isAI: false,
+          imageUrl
+        };
+        await addDoc(collection(db, 'aiMessages'), userMessage);
 
-      if (selectedUser) {
-        const participants = [auth.currentUser.uid, selectedUser.uid].sort();
-        messageData.conversationId = participants.join('_');
-        messageData.receiverId = selectedUser.uid;
-      } else if (selectedGroup) {
-        messageData.groupId = selectedGroup.id;
+        // Generate AI response using Google AI SDK
+        setAiLoading(true);
+        try {
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+          
+          let prompt = newMessage;
+          
+          // If there's an image, create a multimodal prompt
+          if (selectedImage && imageUrl) {
+            // Convert image to base64 for Gemini
+            const fetchResponse = await fetch(imageUrl);
+            const blob = await fetchResponse.blob();
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result.split(',')[1]);
+              reader.readAsDataURL(blob);
+            });
+
+            const result = await model.generateContent([
+              prompt,
+              {
+                inlineData: {
+                  data: base64,
+                  mimeType: blob.type
+                }
+              }
+            ]);
+            
+            const aiResponse = await result.response;
+            const aiText = aiResponse.text();
+
+            // Save AI response
+            const aiMessage = {
+              text: aiText,
+              timestamp: serverTimestamp(),
+              userId: auth.currentUser.uid,
+              isAI: true
+            };
+            await addDoc(collection(db, 'aiMessages'), aiMessage);
+          } else {
+            // Text only prompt
+            const result = await model.generateContent(prompt);
+            const aiResponse = await result.response;
+            const aiText = aiResponse.text();
+
+            // Save AI response
+            const aiMessage = {
+              text: aiText,
+              timestamp: serverTimestamp(),
+              userId: auth.currentUser.uid,
+              isAI: true
+            };
+            await addDoc(collection(db, 'aiMessages'), aiMessage);
+          }
+        } catch (error) {
+          console.error('AI Error:', error);
+          
+          // Save error message as AI response
+          const errorMessage = {
+            text: "Sorry, I encountered an error while processing your request. Please try again.",
+            timestamp: serverTimestamp(),
+            userId: auth.currentUser.uid,
+            isAI: true,
+            isError: true
+          };
+          await addDoc(collection(db, 'aiMessages'), errorMessage);
+        }
+        setAiLoading(false);
+      } else {
+        // Existing message handling for user/group chats
+        const messageData = {
+          text: newMessage,
+          timestamp: serverTimestamp(),
+          uid: auth.currentUser.uid,
+          photoURL: currentUserData?.photoURL || null,
+          displayName: currentUserData?.name || auth.currentUser.displayName || 'Unknown',
+          imageUrl
+        };
+
+        if (selectedUser) {
+          const participants = [auth.currentUser.uid, selectedUser.uid].sort();
+          messageData.conversationId = participants.join('_');
+          messageData.receiverId = selectedUser.uid;
+        } else if (selectedGroup) {
+          messageData.groupId = selectedGroup.id;
+        }
+
+        await addDoc(collection(db, 'messages'), messageData);
       }
-
-      await addDoc(collection(db, 'messages'), messageData);
 
       setNewMessage('');
       setSelectedImage(null);
@@ -182,12 +272,22 @@ export default function Chat() {
     setLoading(false);
   };
 
+  const handleNavigate = (page) => {
+    if (page === 'ai') {
+      setSelectedAI(true);
+      setSelectedUser(null);
+      setSelectedGroup(null);
+    } else {
+      setSelectedAI(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
       <MainHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="w-19 bg-gray-800">
-          <Sidebar />
+          <Sidebar onNavigate={handleNavigate} />
         </div>
 
         <div className="flex flex-1 overflow-hidden">
@@ -199,10 +299,12 @@ export default function Chat() {
             onUserSelect={(user) => {
               setSelectedUser(user);
               setSelectedGroup(null);
+              setSelectedAI(false);
             }}
             onGroupSelect={(group) => {
               setSelectedGroup(group);
               setSelectedUser(null);
+              setSelectedAI(false);
             }}
             currentUserUid={auth.currentUser?.uid}
             messages={messages}
@@ -213,6 +315,7 @@ export default function Chat() {
             <ChatHeader
               selectedUser={selectedUser}
               selectedGroup={selectedGroup}
+              selectedAI={selectedAI}
               currentUser={currentUserData}
               onGroupSettings={() => setShowGroupSettings(true)}
               userStatus={userStatus}
@@ -225,19 +328,22 @@ export default function Chat() {
               currentUserUid={auth.currentUser?.uid}
               messagesEndRef={messagesEndRef}
               isGroup={!!selectedGroup}
+              isAI={selectedAI}
             />
 
-            {(selectedUser || selectedGroup) && (
+            {(selectedUser || selectedGroup || selectedAI) && (
               <MessageInput
                 newMessage={newMessage}
                 setNewMessage={setNewMessage}
                 selectedImage={selectedImage}
                 setSelectedImage={setSelectedImage}
-                loading={loading}
+                loading={loading || aiLoading}
                 onSubmit={handleSubmit}
                 onImageSelect={(e) => setSelectedImage(e.target.files[0])}
                 selectedUser={selectedUser}
                 rtdb={rtdb}
+                isAI={selectedAI}
+                aiLoading={aiLoading}
               />
             )}
           </div>

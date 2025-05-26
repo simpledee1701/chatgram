@@ -12,7 +12,9 @@ const MessageInput = ({
   onSubmit,
   onImageSelect,
   selectedUser,
-  rtdb
+  rtdb,
+  isAI, // Add this prop
+  aiLoading // Add this prop
 }) => {
   const handleTyping = (isTyping) => {
     if (!auth.currentUser?.uid || !selectedUser?.uid) return;
@@ -51,6 +53,12 @@ const MessageInput = ({
 
   return (
     <form onSubmit={onSubmit} className="p-4 shadow-2xl">
+       {aiLoading && (
+        <div className="mb-2 text-sm text-violet-400 flex items-center">
+          <div className="animate-pulse mr-2">⠋</div>
+          AI is generating response...
+        </div>
+      )}
       <div className="flex space-x-3 items-center">
         <div className="flex-1 relative">
           <input
@@ -83,13 +91,13 @@ const MessageInput = ({
 
         <button
           type="submit"
-          disabled={loading || (!newMessage.trim() && !selectedImage)}
+          disabled={loading || aiLoading || (!newMessage.trim() && !selectedImage)}
           className="bg-violet-600 text-white px-6 py-3 rounded-full hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out font-medium flex items-center gap-2 transform active:scale-95"
         >
-          {loading ? (
+          {loading || aiLoading ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Sending...
+              {aiLoading ? 'Generating...' : 'Sending...'}
             </>
           ) : (
             'Send'

@@ -12,6 +12,8 @@
   "dependencies": {
     "@dicebear/collection": "^9.2.2",
     "@dicebear/core": "^9.2.2",
+    "@firebase/ai": "^1.3.0",
+    "@google/generative-ai": "^0.24.1",
     "cloudinary": "^2.6.1",
     "firebase": "^11.8.1",
     "framer-motion": "^12.12.2",
