@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ImagePreview from './ImagePreview';
+import { ref, set, serverTimestamp } from 'firebase/database';
+import { auth } from '../firebase/firebaseConfig';
 
 const MessageInput = ({
   newMessage,
@@ -8,19 +10,57 @@ const MessageInput = ({
   setSelectedImage,
   loading,
   onSubmit,
-  onImageSelect
+  onImageSelect,
+  selectedUser,
+  rtdb
 }) => {
+  const handleTyping = (isTyping) => {
+    if (!auth.currentUser?.uid || !selectedUser?.uid) return;
+
+    const typingRef = ref(rtdb, `typing/${auth.currentUser.uid}`);
+
+    set(typingRef, {
+      isTyping,
+      to: selectedUser.uid,
+      timestamp: serverTimestamp()
+    });
+
+    if (isTyping) {
+      // Clear typing status after 3 seconds of inactivity
+      setTimeout(() => {
+        set(typingRef, {
+          isTyping: false,
+          timestamp: serverTimestamp()
+        });
+      }, 3000);
+    }
+  };
+
+  useEffect(() => {
+    // Clear typing status when component unmounts
+    return () => {
+      if (auth.currentUser?.uid) {
+        const typingRef = ref(rtdb, `typing/${auth.currentUser.uid}`);
+        set(typingRef, {
+          isTyping: false,
+          timestamp: serverTimestamp()
+        });
+      }
+    };
+  }, [rtdb]);
+
   return (
-    // Form area has no background color (transparent)
     <form onSubmit={onSubmit} className="p-4 shadow-2xl">
       <div className="flex space-x-3 items-center">
         <div className="flex-1 relative">
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping(e.target.value.length > 0);
+            }}
             placeholder="Type your message..."
-            // RE-ADDED bg-gray-700 here
             className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-full text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent pr-12 transition-all duration-300 ease-in-out"
           />
           <input

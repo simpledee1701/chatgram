@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { auth } from '../firebase/firebaseConfig';
+import { ref, onValue, off } from 'firebase/database';
+import { auth, db, rtdb } from '../firebase/firebaseConfig';
 import UsersList from '../components/UsersList';
 import ChatHeader from '../components/ChatHeader';
 import MessagesList from '../components/MessagesList';
 import MessageInput from '../components/MessageInput';
 import GroupSettingsModal from '../components/GroupSettingsModal';
 import { useCloudinary } from '../hooks/useCloudinary';
-import Sidebar from '../components/Sidebar'
-import MainHeader from '../components/MainHeader'
+import Sidebar from '../components/Sidebar';
+import MainHeader from '../components/MainHeader';
+import { usePresence } from '../hooks/usePresence';
 
 export default function Chat() {
   const [users, setUsers] = useState([]);
@@ -21,9 +23,13 @@ export default function Chat() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentUserData, setCurrentUserData] = useState(null);
+  const [typingStatus, setTypingStatus] = useState({});
+  const [userStatus, setUserStatus] = useState({});
   const messagesEndRef = useRef(null);
-  const db = getFirestore();
   const { uploadImageToCloudinary } = useCloudinary();
+
+  // Track current user's presence
+  usePresence(rtdb);
 
   // Fetch users
   useEffect(() => {
@@ -34,7 +40,6 @@ export default function Chat() {
         ...doc.data()
       }));
       setUsers(usersData);
-      // Set current user data
       if (auth.currentUser) {
         const current = usersData.find(u => u.uid === auth.currentUser.uid);
         setCurrentUserData(current);
@@ -98,6 +103,41 @@ export default function Chat() {
     return () => unsubscribe();
   }, [db, selectedUser, selectedGroup]);
 
+  // Track other users' statuses
+  // In your Chat component
+  useEffect(() => {
+    if (!selectedUser?.uid) return;
+
+    const statusRef = ref(rtdb, `status/${selectedUser.uid}`);
+    const unsubscribe = onValue(statusRef, (snapshot) => {
+      const data = snapshot.val();
+      setUserStatus(prev => ({
+        ...prev,
+        [selectedUser.uid]: {
+          status: data?.status || 'offline',
+          lastChanged: data?.lastChanged
+        }
+      }));
+    });
+
+    return () => off(statusRef);
+  }, [selectedUser, rtdb]);
+
+  // Track typing status
+  useEffect(() => {
+    if (!selectedUser?.uid) return;
+
+    const typingRef = ref(rtdb, `typing/${selectedUser.uid}`);
+    const unsubscribe = onValue(typingRef, (snapshot) => {
+      setTypingStatus(prev => ({
+        ...prev,
+        [selectedUser.uid]: snapshot.val()
+      }));
+    });
+
+    return () => off(typingRef);
+  }, [selectedUser, rtdb]);
+
   // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -144,17 +184,12 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
-      <MainHeader/>
-      {/* Main Content Row */}
+      <MainHeader />
       <div className="flex flex-1 overflow-hidden">
-
-
-        {/* Sidebar with width w-6 */}
         <div className="w-19 bg-gray-800">
           <Sidebar />
         </div>
 
-        {/* Main Panel */}
         <div className="flex flex-1 overflow-hidden">
           <UsersList
             users={users}
@@ -180,6 +215,8 @@ export default function Chat() {
               selectedGroup={selectedGroup}
               currentUser={currentUserData}
               onGroupSettings={() => setShowGroupSettings(true)}
+              userStatus={userStatus}
+              typingStatus={typingStatus}
             />
 
             <MessagesList
@@ -198,6 +235,9 @@ export default function Chat() {
                 setSelectedImage={setSelectedImage}
                 loading={loading}
                 onSubmit={handleSubmit}
+                onImageSelect={(e) => setSelectedImage(e.target.files[0])}
+                selectedUser={selectedUser}
+                rtdb={rtdb}
               />
             )}
           </div>
@@ -214,5 +254,4 @@ export default function Chat() {
       )}
     </div>
   );
-
 }
