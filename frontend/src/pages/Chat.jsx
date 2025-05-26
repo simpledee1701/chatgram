@@ -283,7 +283,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
+    <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
       <MainHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="w-19 bg-gray-800">

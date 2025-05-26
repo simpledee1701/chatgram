@@ -1,13 +1,7 @@
 import React from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { 
-  FaUser, 
-  FaRobot, 
-  FaSignOutAlt,
-  FaComments,
-  FaUsers
-} from 'react-icons/fa';
+import { FaUser, FaRobot, FaSignOutAlt,FaComments} from 'react-icons/fa';
 import Profile from './Profile';
 
 const Sidebar = ({ currentUser, onNavigate }) => {
@@ -27,7 +21,7 @@ const Sidebar = ({ currentUser, onNavigate }) => {
 
   return (
     <>
-      <div className="w-16 bg-gray-900 flex flex-col items-center py-6 shadow-xl z-20 h-full">
+      <div className="w-16 bg-gray-950 flex flex-col items-center py-6 shadow-xl z-20 h-full">
         <nav className="flex flex-col space-y-6 flex-grow mt-4">
 
           {/* Chats Button */}

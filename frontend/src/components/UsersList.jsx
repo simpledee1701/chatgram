@@ -64,9 +64,9 @@ const UsersList = ({
   };
 
   return (
-    <div className="w-1/4 bg-gray-800 border-r border-gray-900 overflow-hidden rounded-tl-2xl rounded-bl-2xl shadow-lg relative">
-      <div className="p-3 bg-gray-800 border-b border-gray-700">
-        <div className="flex justify-between items-center mb-2">
+    <div className="w-1/4 bg-gray-900 border-r border-gray-900 overflow-hidden rounded-tl-2xl rounded-bl-2xl shadow-lg relative">
+      <div className="p-3 bg-gray-900 border-b border-gray-900">
+        <div className="flex justify-between items-center mb-3">
           <h2 className="text-lg font-bold text-gray-100 tracking-wide">Chats</h2>
 
           <div className="relative" ref={menuRef}>
@@ -105,7 +105,7 @@ const UsersList = ({
           <input
             type="text"
             placeholder="Search chats"
-            className="w-full py-2 px-4 pl-10 bg-gray-700 text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            className="w-full py-2 px-4 pl-10 bg-gray-800 text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -132,7 +132,7 @@ const UsersList = ({
             <div
               key={group.id}
               onClick={() => onGroupSelect(group)}
-              className={`p-3 cursor-pointer flex items-start hover:bg-gray-700 transition-colors ${selectedGroup?.id === group.id ? 'bg-gray-700' : ''}`}
+              className={`p-3 cursor-pointer flex items-start hover:bg-gray-800 transition-colors ${selectedGroup?.id === group.id ? 'bg-gray-800' : 'bg-gray-900'}`}
             >
               <div className="bg-gray-600 rounded-full h-10 w-10 flex items-center justify-center">
                 <span className="text-lg">👥</span>
@@ -165,7 +165,7 @@ const UsersList = ({
             <div
               key={user.uid}
               onClick={() => onUserSelect(user)}
-              className={`p-3 cursor-pointer flex items-start hover:bg-gray-700 transition-colors ${selectedUser?.uid === user.uid ? 'bg-gray-700' : ''}`}
+              className={`p-3 cursor-pointer flex items-start hover:bg-gray-800 transition-colors ${selectedUser?.uid === user.uid ? 'bg-gray-800' : 'bg-gray-900'}`}
             >
               <Avatar user={user} />
               <div className="ml-3 flex-1 min-w-0">

@@ -74,7 +74,8 @@ const ChatHeader = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
+    <div className={`flex items-center justify-between p-4 border-b ${selectedUser || selectedGroup || selectedAI ? 'bg-gray-900 border-gray-900' : 'bg-gray-950 border-black'}`}>
+
       <div className="flex items-center">
         {currentGroup ? (
           <>

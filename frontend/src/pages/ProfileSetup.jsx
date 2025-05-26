@@ -113,7 +113,6 @@ export default function ProfileSetup() {
       return;
     }
 
-    // Crucial: Prevent submission if availability check is ongoing or if ID is not available
     if (isCheckingChatgramId) {
       setError("Please wait, checking Chatgram ID availability.");
       setLoading(false);
@@ -133,13 +132,7 @@ export default function ProfileSetup() {
 
     try {
       const db = getFirestore();
-
-      // At this point, `chatgramIdAvailability` should be `true` due to the `useEffect` check.
-      // However, for maximum safety, you could re-check here, but usually, the UI guard is enough.
-      // The `chatgramIdAvailability` state should reflect the most recent check.
-
       const userDocRef = doc(db, 'users', auth.currentUser.uid);
-
       await setDoc(userDocRef, {
         uid: auth.currentUser.uid,
         email: auth.currentUser.email,

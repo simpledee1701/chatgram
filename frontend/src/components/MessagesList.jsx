@@ -4,56 +4,56 @@ import Avatar from './Avatar';
 const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup, isAI }) => {
   const getUserById = (uid) => users.find(user => user.uid === uid);
 
-  // Safe timestamp conversion
   const getTimestamp = (timestamp) => {
     try {
-      // If it's a Firestore Timestamp
       if (timestamp?.toDate) return timestamp.toDate();
-      // If it's already a Date object
       if (timestamp instanceof Date) return timestamp;
-      // Fallback to current time
       return new Date();
     } catch {
       return new Date();
     }
   };
 
+  const hasMessages = messages && messages.length > 0;
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      {messages.map((message) => {
-        // Handle undefined uid case - if uid is undefined and it's not an AI message, 
-        // assume it's from current user (temporary fix)
-        const isCurrentUser = message.isAI ? false : 
+      {!hasMessages && (
+        <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-2">
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-2">
+            <p className="text-2xl font-semibold text-gray-200 tracking-tight">
+              No messages yet
+            </p>
+            <p className="text-lg font-medium text-gray-400">
+              Start the conversation your messages are private and end-to-end encrypted.
+            </p>
+            <p className="text-sm text-gray-500 max-w-xs">
+              Only you and the recipient can read them. Not even our servers can peek.
+            </p>
+          </div>
+
+        </div>
+      )}
+
+      {hasMessages && messages.map((message) => {
+        const isCurrentUser = message.isAI ? false :
           (message.uid === currentUserUid || (!message.uid && !message.isAI));
         const sender = getUserById(message.uid);
         const isAIMessage = message.isAI;
         const timestamp = getTimestamp(message.timestamp);
 
-        // Debug logging - remove this after fixing
-        console.log('Message:', {
-          id: message.id,
-          uid: message.uid,
-          currentUserUid,
-          isCurrentUser,
-          isAIMessage,
-          text: message.text?.substring(0, 20)
-        });
-
         return (
           <div
             key={message.id}
-            className={`flex ${
-              isAIMessage ? 'justify-start' : 
-              isCurrentUser ? 'justify-end' : 'justify-start'
-            }`}
+            className={`flex ${isAIMessage ? 'justify-start' :
+                isCurrentUser ? 'justify-end' : 'justify-start'
+              }`}
           >
             <div
-              className={`max-w-[70%] rounded-lg p-3 ${
-                isAIMessage ? 'bg-gray-700' :
-                isCurrentUser ? 'bg-indigo-600 ml-auto' : 'bg-gray-800'
-              }`}
+              className={`max-w-[70%] rounded-lg p-3 ${isAIMessage ? 'bg-gray-700' :
+                  isCurrentUser ? 'bg-green-800 ml-auto' : 'bg-gray-900'
+                }`}
             >
-              {/* AI Label */}
               {isAIMessage && (
                 <div className="flex items-center mb-1 space-x-2">
                   <span className="text-xs text-violet-400 font-medium">
@@ -62,7 +62,6 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                 </div>
               )}
 
-              {/* Sender info - hidden for AI messages and current user messages */}
               {!isAIMessage && isGroup && !isCurrentUser && (
                 <div className="flex items-center mb-1 space-x-2 overflow-hidden">
                   <div className="w-5 h-5 flex-shrink-0">
@@ -74,7 +73,6 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                 </div>
               )}
 
-              {/* Message content */}
               {message.imageUrl && (
                 <img
                   src={message.imageUrl}
@@ -86,7 +84,6 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                 {message.text}
               </p>
 
-              {/* Timestamp */}
               <div className={`flex mt-1 ${isCurrentUser || isAIMessage ? 'justify-end' : 'justify-start'}`}>
                 <span className="text-xs text-gray-300">
                   {timestamp.toLocaleTimeString([], {

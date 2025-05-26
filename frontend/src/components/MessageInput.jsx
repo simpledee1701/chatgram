@@ -69,7 +69,7 @@ const MessageInput = ({
               handleTyping(e.target.value.length > 0);
             }}
             placeholder="Type your message..."
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-full text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent pr-12 transition-all duration-300 ease-in-out"
+            className="w-full px-4 py-3 bg-gray-900 border border-gray-600 rounded-full text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent pr-12 transition-all duration-300 ease-in-out"
           />
           <input
             type="file"
