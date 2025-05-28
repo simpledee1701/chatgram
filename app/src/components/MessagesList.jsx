@@ -27,10 +27,10 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
   // Close all popups when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const isClickInsideMessage = Object.values(messageRefs.current).some(ref => 
+      const isClickInsideMessage = Object.values(messageRefs.current).some(ref =>
         ref && ref.contains(event.target)
       );
-      
+
       if (!isClickInsideMessage) {
         setShowEmojiPickerFor(null);
         setShowReactionDetails(null);
@@ -75,11 +75,11 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
   const formatDate = (date) => {
     const today = new Date();
     const isToday = isSameDay(date, today);
-    
+
     if (isToday) {
       return 'Today';
     }
-    
+
     return date.toLocaleDateString([], {
       weekday: 'long',
       year: 'numeric',
@@ -167,9 +167,9 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
   const hasMessages = messages && messages.length > 0;
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar relative bg-gradient-to-b from-slate-900/50 to-slate-950/50">
+    <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar relative bg-gray-950">
       {/* Custom CSS for enhanced animations and effects */}
-      <style jsx>{`
+      <style>{`
         .message-bubble {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           backdrop-filter: blur(12px);
@@ -267,9 +267,9 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
       `}</style>
 
       {!hasMessages && (
-        <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
+        <div className="flex flex-col items-center justify-center h-screen w-full text-center space-y-6 bg-gray-950">
           <div className="relative">
-            <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center border border-purple-500/30">
+            <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center border border-purple-500/30">
               <FiSmile className="w-12 h-12 text-purple-400" />
             </div>
             <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
@@ -277,7 +277,7 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
             </div>
           </div>
           <div className="space-y-3">
-            <h3 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+            <h3 className="text-3xl font-bold text-purple-300">
               No messages yet
             </h3>
             <p className="text-lg text-gray-400 max-w-md">
@@ -285,6 +285,7 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
             </p>
           </div>
         </div>
+
       )}
 
       {hasMessages && messages.map((message, index) => {
@@ -415,13 +416,12 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
 
                 {/* Message bubble */}
                 <div
-                  className={`message-bubble relative rounded-2xl px-4 py-3 ${
-                    isAIMessage 
-                      ? 'bg-gradient-to-br from-purple-900/80 to-violet-900/80 border border-purple-600/50 ai-glow' 
-                      : isCurrentUser 
-                        ? 'bg-gradient-to-br from-green-900/80 to-emerald-900/80 border border-green-600/50 glow-effect' 
+                  className={`message-bubble relative rounded-2xl px-4 py-3 ${isAIMessage
+                      ? 'bg-gradient-to-br from-purple-900/80 to-violet-900/80 border border-purple-600/50 ai-glow'
+                      : isCurrentUser
+                        ? 'bg-gradient-to-br from-green-900/80 to-emerald-900/80 border border-green-600/50 glow-effect'
                         : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-600/50'
-                  }`}
+                    }`}
                 >
                   {/* Message header */}
                   {!isAIMessage && isGroup && !isCurrentUser && (
@@ -461,9 +461,8 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
 
                   {/* Message footer */}
                   <div className="flex items-center justify-end mt-2">
-                    <span className={`text-xs font-medium ${
-                      isCurrentUser ? 'text-green-300/90' : 'text-gray-400/90'
-                    }`}>
+                    <span className={`text-xs font-medium ${isCurrentUser ? 'text-green-300/90' : 'text-gray-400/90'
+                      }`}>
                       {formatTime(timestamp)}
                     </span>
                   </div>
