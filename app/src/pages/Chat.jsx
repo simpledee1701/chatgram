@@ -11,7 +11,7 @@ import {
   onSnapshot,
   deleteDoc,
   doc,
-  writeBatch,getDoc,setDoc
+  writeBatch, getDoc, setDoc
 } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { auth, db, rtdb, genAI } from '../firebase/firebaseConfig';
@@ -33,7 +33,7 @@ export default function Chat() {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentUserData, setCurrentUserData] = useState(null);
   const [typingStatus, setTypingStatus] = useState({});
@@ -42,7 +42,7 @@ export default function Chat() {
   const [aiLoading, setAiLoading] = useState(false);
   const [forwardingMessage, setForwardingMessage] = useState(null);
   const messagesEndRef = useRef(null);
-  const { uploadImageToCloudinary } = useCloudinary();
+  const { uploadFileToCloudinary } = useCloudinary();
 
   usePresence(rtdb);
 
@@ -167,13 +167,21 @@ export default function Chat() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !selectedImage) || (!selectedUser && !selectedGroup && !selectedAI)) return;
+    if ((!newMessage.trim() && !selectedFile) || (!selectedUser && !selectedGroup && !selectedAI)) return;
 
     setLoading(true);
     try {
-      let imageUrl = '';
-      if (selectedImage) {
-        imageUrl = await uploadImageToCloudinary(selectedImage);
+      let fileData = null;
+      if (selectedFile) {
+        const uploadResult = await uploadFileToCloudinary(selectedFile);
+        fileData = {
+          url: uploadResult.url,
+          name: selectedFile.name,
+          size: selectedFile.size,
+          type: selectedFile.type,
+          publicId: uploadResult.publicId,
+          resourceType: uploadResult.resourceType
+        };
       }
 
       if (selectedAI) {
@@ -183,7 +191,7 @@ export default function Chat() {
           timestamp: serverTimestamp(),
           userId: auth.currentUser.uid,
           isAI: false,
-          imageUrl
+          fileData
         };
         await addDoc(collection(db, 'aiMessages'), userMessage);
 
@@ -194,38 +202,49 @@ export default function Chat() {
 
           let prompt = newMessage;
 
-          // If there's an image, create a multimodal prompt
-          if (selectedImage && imageUrl) {
-            // Convert image to base64 for Gemini
-            const fetchResponse = await fetch(imageUrl);
-            const blob = await fetchResponse.blob();
-            const base64 = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result.split(',')[1]);
-              reader.readAsDataURL(blob);
-            });
+          // Handle different file types for AI processing
+          if (selectedFile && fileData) {
+            if (selectedFile.type.startsWith('image/')) {
+              // Convert image to base64 for Gemini
+              const fetchResponse = await fetch(fileData.url);
+              const blob = await fetchResponse.blob();
+              const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(blob);
+              });
 
-            const result = await model.generateContent([
-              prompt,
-              {
-                inlineData: {
-                  data: base64,
-                  mimeType: blob.type
+              const result = await model.generateContent([
+                prompt || "What do you see in this image?",
+                {
+                  inlineData: {
+                    data: base64,
+                    mimeType: blob.type
+                  }
                 }
-              }
-            ]);
+              ]);
 
-            const aiResponse = await result.response;
-            const aiText = aiResponse.text();
+              const aiResponse = await result.response;
+              const aiText = aiResponse.text();
 
-            // Save AI response
-            const aiMessage = {
-              text: aiText,
-              timestamp: serverTimestamp(),
-              userId: auth.currentUser.uid,
-              isAI: true
-            };
-            await addDoc(collection(db, 'aiMessages'), aiMessage);
+              // Save AI response
+              const aiMessage = {
+                text: aiText,
+                timestamp: serverTimestamp(),
+                userId: auth.currentUser.uid,
+                isAI: true
+              };
+              await addDoc(collection(db, 'aiMessages'), aiMessage);
+            } else {
+              // For non-image files, just acknowledge the file
+              const aiMessage = {
+                text: `I received your ${selectedFile.type.split('/')[0]} file "${selectedFile.name}". ${prompt ? `Regarding your message: ${prompt}` : 'How can I help you with this file?'}`,
+                timestamp: serverTimestamp(),
+                userId: auth.currentUser.uid,
+                isAI: true
+              };
+              await addDoc(collection(db, 'aiMessages'), aiMessage);
+            }
           } else {
             // Text only prompt
             const result = await model.generateContent(prompt);
@@ -263,7 +282,7 @@ export default function Chat() {
           uid: auth.currentUser.uid,
           photoURL: currentUserData?.photoURL || null,
           displayName: currentUserData?.name || auth.currentUser.displayName || 'Unknown',
-          imageUrl
+          fileData
         };
 
         if (selectedUser) {
@@ -278,7 +297,7 @@ export default function Chat() {
       }
 
       setNewMessage('');
-      setSelectedImage(null);
+      setSelectedFile(null);
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message');
@@ -305,7 +324,7 @@ export default function Chat() {
       } else {
         messageRef = doc(db, 'messages', messageId);
       }
-      
+
       await deleteDoc(messageRef);
       // Optionally show success notification
     } catch (error) {
@@ -315,7 +334,7 @@ export default function Chat() {
   };
 
   // Implement forward message handler
-const handleForwardMessage = async (message, recipientIds) => {
+  const handleForwardMessage = async (message, recipientIds) => {
   try {
     const db = getFirestore();
     const batch = writeBatch(db);
@@ -332,7 +351,7 @@ const handleForwardMessage = async (message, recipientIds) => {
         timestamp: serverTimestamp(),
         forwarded: true,
         originalSender: message.uid || (message.isAI ? "AI" : "Unknown"),
-        imageUrl: message.imageUrl || null,
+        fileData: message.fileData || null,
         photoURL: currentUserData?.photoURL || null,
         displayName: currentUserData?.name || auth.currentUser.displayName || 'Unknown',
         conversationId: conversationId,
@@ -343,9 +362,8 @@ const handleForwardMessage = async (message, recipientIds) => {
       const convoRef = doc(db, 'conversations', conversationId);
       const convoData = {
         participants: participants,
-        lastMessage: message.text,
+        lastMessage: message.text || (message.fileData ? `📎 ${message.fileData.name}` : 'File'),
         lastMessageTimestamp: serverTimestamp(),
-        // Initialize unread count for the recipient
         unreadCount: { [uid]: 1 }
       };
       
@@ -418,11 +436,11 @@ const handleForwardMessage = async (message, recipientIds) => {
               <MessageInput
                 newMessage={newMessage}
                 setNewMessage={setNewMessage}
-                selectedImage={selectedImage}
-                setSelectedImage={setSelectedImage}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
                 loading={loading || aiLoading}
                 onSubmit={handleSubmit}
-                onImageSelect={(e) => setSelectedImage(e.target.files[0])}
+                onFileSelect={(e) => setSelectedFile(e.target.files[0])}
                 selectedUser={selectedUser}
                 rtdb={rtdb}
                 isAI={selectedAI}

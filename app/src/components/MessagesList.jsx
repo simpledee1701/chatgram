@@ -4,6 +4,7 @@ import { FiCopy, FiCornerUpRight, FiTrash2, FiSmile, FiX, FiCheck } from 'react-
 import EmojiPicker from 'emoji-picker-react';
 import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
+import MessageFileDisplay from './MessageFileDisplay';
 
 const MessagesList = ({
   messages,
@@ -201,7 +202,6 @@ const MessagesList = ({
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar relative bg-gray-950">
-      {/* Custom CSS for enhanced animations and effects */}
       <style>{`
         .message-bubble {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -318,7 +318,6 @@ const MessagesList = ({
             </p>
           </div>
         </div>
-
       )}
 
       {hasMessages && messages.map((message, index) => {
@@ -508,8 +507,15 @@ const MessagesList = ({
                     </div>
                   )}
 
+                  {/* Display forwarded message indicator */}
+                  {message.forwarded && (
+                    <div className="text-xs text-gray-300 mb-1 italic">
+                      Forwarded from {message.originalSender}
+                    </div>
+                  )}
+
                   {/* Message content */}
-                  {message.imageUrl && (
+                  {message.imageUrl && !message.fileData && (
                     <div className="mb-3">
                       <img
                         src={message.imageUrl}
@@ -519,9 +525,21 @@ const MessagesList = ({
                     </div>
                   )}
 
-                  <p className={`text-sm leading-relaxed ${isAIMessage ? 'text-gray-100' : 'text-white'}`}>
-                    {message.text}
-                  </p>
+                  {/* Display file attachments */}
+                  {message.fileData && (
+                    <div className="mb-3">
+                      <MessageFileDisplay 
+                        fileData={message.fileData} 
+                        isCurrentUser={isCurrentUser}
+                      />
+                    </div>
+                  )}
+
+                  {message.text && (
+                    <p className={`text-sm leading-relaxed ${isAIMessage ? 'text-gray-100' : 'text-white'}`}>
+                      {message.text}
+                    </p>
+                  )}
 
                   {/* Message footer */}
                   <div className="flex items-center justify-end mt-2">
@@ -662,10 +680,19 @@ const MessagesList = ({
 
             <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
               <p className="text-gray-200 text-sm">
-                {forwardingMessage.text.length > 120
+                {forwardingMessage.text?.length > 120
                   ? `${forwardingMessage.text.substring(0, 120)}...`
-                  : forwardingMessage.text}
+                  : forwardingMessage.text || 'File attachment'}
               </p>
+              {forwardingMessage.fileData && (
+                <div className="mt-2">
+                  <MessageFileDisplay 
+                    fileData={forwardingMessage.fileData} 
+                    isCurrentUser={true}
+                    compact={true}
+                  />
+                </div>
+              )}
             </div>
 
             <h4 className="text-sm font-medium text-gray-400 mb-3">Select contacts to forward to:</h4>
