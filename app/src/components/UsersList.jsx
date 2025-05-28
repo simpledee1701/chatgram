@@ -16,6 +16,7 @@ const UsersList = ({
   onGroupCreate
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('All'); // All | Groups | Chats
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredGroups, setFilteredGroups] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
@@ -33,16 +34,26 @@ const UsersList = ({
   }, []);
 
   useEffect(() => {
+    const lowerSearch = searchTerm.toLowerCase();
     const filteredU = users.filter(user =>
       user.uid !== currentUserUid &&
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      user.name?.toLowerCase().includes(lowerSearch)
     );
     const filteredG = groups.filter(group =>
-      group.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      group.name?.toLowerCase().includes(lowerSearch)
     );
-    setFilteredUsers(filteredU);
-    setFilteredGroups(filteredG);
-  }, [searchTerm, users, groups, currentUserUid]);
+
+    if (filterType === 'Groups') {
+      setFilteredGroups(filteredG);
+      setFilteredUsers([]);
+    } else if (filterType === 'Chats') {
+      setFilteredUsers(filteredU);
+      setFilteredGroups([]);
+    } else {
+      setFilteredUsers(filteredU);
+      setFilteredGroups(filteredG);
+    }
+  }, [searchTerm, users, groups, currentUserUid, filterType]);
 
   const getLastMessage = (id, isGroup) => {
     if (!messages) return null;
@@ -63,12 +74,13 @@ const UsersList = ({
     }
   };
 
+  const tabs = ['All', 'Groups', 'Chats'];
+
   return (
     <div className="w-1/4 bg-gray-900 border-r border-gray-900 overflow-hidden rounded-tl-2xl rounded-bl-2xl shadow-lg relative">
       <div className="p-3 bg-gray-900 border-b border-gray-900">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-lg font-bold text-gray-100 tracking-wide">Chats</h2>
-
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(prev => !prev)}
@@ -123,9 +135,26 @@ const UsersList = ({
             />
           </svg>
         </div>
+
+        {/* Filter Tabs */}
+        <div className="mt-3 flex space-x-2 bg-gray-800 rounded-full p-1">
+          {tabs.map(tab => (
+            <button
+              key={tab}
+              onClick={() => setFilterType(tab)}
+              className={`flex-1 text-sm py-1.5 rounded-full transition-all duration-200 ${
+                filterType === tab
+                  ? 'bg-indigo-500 text-white shadow-sm'
+                  : 'text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="overflow-y-auto h-[calc(100vh-120px)] custom-scrollbar">
+      <div className="overflow-y-auto h-[calc(100vh-160px)] custom-scrollbar">
         {filteredGroups.map((group) => {
           const lastMessage = getLastMessage(group.id, true);
           return (

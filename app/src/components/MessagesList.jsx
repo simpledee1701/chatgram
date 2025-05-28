@@ -5,7 +5,7 @@ import EmojiPicker from 'emoji-picker-react';
 import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
 
-const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup, isAI, onDeleteMessage, onForwardMessage }) => {
+const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup, isAI}) => {
   const [hoveredMessageId, setHoveredMessageId] = useState(null);
   const [showEmojiPickerFor, setShowEmojiPickerFor] = useState(null);
   const [reactions, setReactions] = useState({});
@@ -360,37 +360,9 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                           >
                             {copiedMessageId === message.id ? <FiCheck size={16} /> : <FiCopy size={16} />}
                           </button>
-                          <button
-                            className="text-gray-300 hover:text-green-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
-                            onClick={() => onForwardMessage(message)}
-                            title="Forward message"
-                          >
-                            <FiCornerUpRight size={16} />
-                          </button>
-                          <button
-                            className="text-gray-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
-                            onClick={() => onDeleteMessage(message.id, 'everyone')}
-                            title="Delete message"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
                         </>
                       ) : (
                         <>
-                          <button
-                            className="text-gray-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
-                            onClick={() => onDeleteMessage(message.id, 'self')}
-                            title="Delete message"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
-                          <button
-                            className="text-gray-300 hover:text-green-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
-                            onClick={() => onForwardMessage(message)}
-                            title="Forward message"
-                          >
-                            <FiCornerUpRight size={16} />
-                          </button>
                           <button
                             className="text-gray-300 hover:text-blue-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
                             onClick={() => handleCopy(message.text, message.id)}
