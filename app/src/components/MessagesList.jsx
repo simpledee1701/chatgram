@@ -5,12 +5,24 @@ import EmojiPicker from 'emoji-picker-react';
 import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
 
-const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup, isAI}) => {
+const MessagesList = ({
+  messages,
+  users,
+  currentUserUid,
+  messagesEndRef,
+  isGroup,
+  isAI,
+  onDeleteMessage,
+  onForwardMessage
+}) => {
   const [hoveredMessageId, setHoveredMessageId] = useState(null);
   const [showEmojiPickerFor, setShowEmojiPickerFor] = useState(null);
   const [reactions, setReactions] = useState({});
   const [showReactionDetails, setShowReactionDetails] = useState(null);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [showForwardModal, setShowForwardModal] = useState(false);
   const messageRefs = useRef({});
 
   // Load reactions from messages
@@ -35,6 +47,7 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
         setShowEmojiPickerFor(null);
         setShowReactionDetails(null);
         setHoveredMessageId(null);
+        setConfirmDeleteId(null);
       }
     };
 
@@ -161,6 +174,26 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
         ...prev,
         [messageId]: [...(prev[messageId] || []), reaction]
       }));
+    }
+  };
+
+  const handleForward = (message) => {
+    setForwardingMessage(message);
+    setShowForwardModal(true);
+  };
+
+  const confirmForward = (selectedUsers) => {
+    if (onForwardMessage && forwardingMessage) {
+      onForwardMessage(forwardingMessage, selectedUsers);
+    }
+    setShowForwardModal(false);
+    setForwardingMessage(null);
+  };
+
+  const handleDelete = async (messageId, isAIMessage) => {
+    setConfirmDeleteId(null);
+    if (onDeleteMessage) {
+      await onDeleteMessage(messageId, isAIMessage);
     }
   };
 
@@ -360,6 +393,16 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                           >
                             {copiedMessageId === message.id ? <FiCheck size={16} /> : <FiCopy size={16} />}
                           </button>
+                          <button
+                            className="text-gray-300 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleForward(message);
+                            }}
+                            title="Forward message"
+                          >
+                            <FiCornerUpRight size={16} />
+                          </button>
                         </>
                       ) : (
                         <>
@@ -380,8 +423,57 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                           >
                             <FiSmile size={16} />
                           </button>
+                          <button
+                            className="text-gray-300 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleForward(message);
+                            }}
+                            title="Forward message"
+                          >
+                            <FiCornerUpRight size={16} />
+                          </button>
+                          <button
+                            className="text-gray-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(message.id);
+                            }}
+                            title="Delete message"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
                         </>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Delete Confirmation */}
+                {confirmDeleteId === message.id && (
+                  <div className={`absolute -top-8 z-50 ${isCurrentUser ? 'right-0' : 'left-0'}`}>
+                    <div className="message-options flex items-center space-x-2 bg-gray-800/95 rounded-xl px-3 py-2 border border-gray-600/50">
+                      <span className="text-xs text-gray-300">Delete?</span>
+                      <button
+                        className="text-red-400 hover:text-red-300 p-1 rounded-lg hover:bg-red-900/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(message.id, message.isAI);
+                        }}
+                        title="Confirm delete"
+                      >
+                        <FiCheck size={16} />
+                      </button>
+                      <button
+                        className="text-gray-400 hover:text-gray-200 p-1 rounded-lg hover:bg-gray-700/50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(null);
+                        }}
+                        title="Cancel"
+                      >
+                        <FiX size={16} />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -389,10 +481,10 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
                 {/* Message bubble */}
                 <div
                   className={`message-bubble relative rounded-2xl px-4 py-3 ${isAIMessage
-                      ? 'bg-gradient-to-br from-purple-900/80 to-violet-900/80 border border-purple-600/50 ai-glow'
-                      : isCurrentUser
-                        ? 'bg-gradient-to-br from-green-900/80 to-emerald-900/80 border border-green-600/50 glow-effect'
-                        : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-600/50'
+                    ? 'bg-gradient-to-br from-purple-900/80 to-violet-900/80 border border-purple-600/50 ai-glow'
+                    : isCurrentUser
+                      ? 'bg-gradient-to-br from-green-900/80 to-emerald-900/80 border border-green-600/50 glow-effect'
+                      : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-600/50'
                     }`}
                 >
                   {/* Message header */}
@@ -554,6 +646,64 @@ const MessagesList = ({ messages, users, currentUserUid, messagesEndRef, isGroup
         );
       })}
       <div ref={messagesEndRef} />
+      {/* Forward Modal */}
+      {showForwardModal && forwardingMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-md mx-4 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white">Forward Message</h3>
+              <button
+                onClick={() => setShowForwardModal(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+              <p className="text-gray-200 text-sm">
+                {forwardingMessage.text.length > 120
+                  ? `${forwardingMessage.text.substring(0, 120)}...`
+                  : forwardingMessage.text}
+              </p>
+            </div>
+
+            <h4 className="text-sm font-medium text-gray-400 mb-3">Select contacts to forward to:</h4>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {users
+                .filter(u => u.uid !== currentUserUid)
+                .map(user => (
+                  <div
+                    key={user.uid}
+                    className="flex items-center p-3 rounded-lg hover:bg-gray-800/50 cursor-pointer"
+                    onClick={() => confirmForward([user.uid])}
+                  >
+                    <Avatar user={user} size="w-10 h-10" />
+                    <div className="ml-3">
+                      <p className="text-gray-200 font-medium">{user.name}</p>
+                      <p className="text-gray-500 text-sm">@{user.username}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowForwardModal(false)}
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmForward(users.filter(u => u.uid !== currentUserUid).map(u => u.uid))}
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Forward to All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

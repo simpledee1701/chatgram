@@ -1,5 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { getFirestore, collection, query, where, orderBy, limit, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  writeBatch,getDoc,setDoc
+} from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { auth, db, rtdb, genAI } from '../firebase/firebaseConfig';
 import UsersList from '../components/UsersList';
@@ -27,6 +40,7 @@ export default function Chat() {
   const [userStatus, setUserStatus] = useState({});
   const [selectedAI, setSelectedAI] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
   const messagesEndRef = useRef(null);
   const { uploadImageToCloudinary } = useCloudinary();
 
@@ -282,6 +296,70 @@ export default function Chat() {
     }
   };
 
+  // Implement delete message handler
+  const handleDeleteMessage = async (messageId, isAI) => {
+    try {
+      let messageRef;
+      if (isAI) {
+        messageRef = doc(db, 'aiMessages', messageId);
+      } else {
+        messageRef = doc(db, 'messages', messageId);
+      }
+      
+      await deleteDoc(messageRef);
+      // Optionally show success notification
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      // Show error notification
+    }
+  };
+
+  // Implement forward message handler
+const handleForwardMessage = async (message, recipientIds) => {
+  try {
+    const db = getFirestore();
+    const batch = writeBatch(db);
+    
+    for (const uid of recipientIds) {
+      const participants = [auth.currentUser.uid, uid].sort();
+      const conversationId = participants.join('_');
+      
+      // Create the message
+      const newMessageRef = doc(collection(db, 'messages'));
+      batch.set(newMessageRef, {
+        text: message.text,
+        uid: auth.currentUser.uid,
+        timestamp: serverTimestamp(),
+        forwarded: true,
+        originalSender: message.uid || (message.isAI ? "AI" : "Unknown"),
+        imageUrl: message.imageUrl || null,
+        photoURL: currentUserData?.photoURL || null,
+        displayName: currentUserData?.name || auth.currentUser.displayName || 'Unknown',
+        conversationId: conversationId,
+        receiverId: uid
+      });
+
+      // Create or update conversation metadata
+      const convoRef = doc(db, 'conversations', conversationId);
+      const convoData = {
+        participants: participants,
+        lastMessage: message.text,
+        lastMessageTimestamp: serverTimestamp(),
+        // Initialize unread count for the recipient
+        unreadCount: { [uid]: 1 }
+      };
+      
+      batch.set(convoRef, convoData, { merge: true });
+    }
+
+    await batch.commit();
+    console.log('Messages forwarded successfully');
+  } catch (error) {
+    console.error('Error forwarding messages:', error);
+    alert('Failed to forward message. Error: ' + error.message);
+  }
+};
+
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
       <MainHeader />
@@ -332,6 +410,8 @@ export default function Chat() {
               messagesEndRef={messagesEndRef}
               isGroup={!!selectedGroup}
               isAI={selectedAI}
+              onDeleteMessage={handleDeleteMessage}
+              onForwardMessage={handleForwardMessage}
             />
 
             {(selectedUser || selectedGroup || selectedAI) && (
