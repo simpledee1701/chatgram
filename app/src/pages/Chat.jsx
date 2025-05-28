@@ -332,6 +332,12 @@ export default function Chat() {
               messagesEndRef={messagesEndRef}
               isGroup={!!selectedGroup}
               isAI={selectedAI}
+              onDeleteMessage={(messageId, scope) => {
+                console.log(`Delete message ${messageId} for ${scope}`);
+              }}
+              onForwardMessage={(message) => {
+                console.log('Forward message:', message);
+              }}
             />
 
             {(selectedUser || selectedGroup || selectedAI) && (

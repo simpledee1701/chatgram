@@ -4,6 +4,18 @@ html, body, #root {
   min-height: 100vh;
   background: #000;
 }
+
+/* Completely hide scrollbar but keep scrolling functionality */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+
 /* Custom Scrollbar Styles */
 .custom-scrollbar {
   scrollbar-width: thin; /* Firefox */
