@@ -38,12 +38,18 @@
 
 ## 📸 Screenshots
 
+### Start Page
+
 ![start](https://github.com/user-attachments/assets/87ba9d11-41b4-4af6-a7e3-d3ec14a26f1d)
-![chat_intro](https://github.com/user-attachments/assets/c6d0884d-e2bf-4ad7-a52d-0981fb0b42f3)
+
+### Profile Setup Page
+
 ![profile](https://github.com/user-attachments/assets/491e2a3a-5c6c-41d4-9fb7-ef26526fcd12)
-![Screenshot 2025-05-29 134430](https://github.com/user-attachments/assets/76b4db2f-bd9d-47bf-afa0-f0c74907ca1d)
-![Screenshot 2025-05-29 134402](https://github.com/user-attachments/assets/9844ae45-b245-4964-9bf9-d87255c869d5)
--9398-4941-87b3-147470a6cdfe)
+
+### Chat Page
+
+![chat_intro](![image](https://github.com/user-attachments/assets/d705a6d4-9cac-42f6-9978-fbb479de94d3)
+
 
 ---
 
