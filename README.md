@@ -24,7 +24,7 @@
 ## ✨ Features
 
 ### ✅ Core Features
-- 🔒 User authentication (Google sign-in or email/password)
+- 🔒 User authentication (Google sign-in)
 - 💬 One-to-one and group chat support
 - 😀 Emoji picker and messaging
 - 📷 Share photos and videos in chat with in built audio recording
@@ -64,37 +64,37 @@ This guide will help you set up Firebase and Cloudinary for this project. The pr
 ### 🔥 Firebase Setup
 
 1. Create a Firebase Project
-- Visit [Firebase Console](https://console.firebase.google.com/).
-- Click **Add project** → Enter project name → Continue with default settings.
+  - Visit [Firebase Console](https://console.firebase.google.com/).
+  - Click **Add project** → Enter project name → Continue with default settings.
 
 2. Register Your Web App
-- In your Firebase dashboard, go to **Project Overview > Web** (`</>` icon).
-- Register the app and copy the Firebase configuration snippet.
+  - In your Firebase dashboard, go to **Project Overview > Web** (`</>` icon).
+  - Register the app and copy the Firebase configuration snippet.
 
 3. Enable Authentication
-- Go to **Authentication > Sign-in method**.
-- Enable **Google Sign-In** or other desired providers.
-- Add your app's domain under **Authorized domains** (e.g., `localhost`, `yourdomain.com`).
+  - Go to **Authentication > Sign-in method**.
+  - Enable **Google Sign-In** or other desired providers.
+  - Add your app's domain under **Authorized domains** (e.g., `localhost`, `yourdomain.com`).
 
 4. Enable Firestore or Realtime Database
-- Go to **Firestore Database** or **Realtime Database**.
-- Click **Create database** → Start in **test mode** (for development).
+  - Go to **Firestore Database** or **Realtime Database**.
+  - Click **Create database** → Start in **test mode** (for development).
 
 ### ☁️ Cloudinary Setup
 
 1. Create an Account
-- Visit [Cloudinary](https://cloudinary.com/) and sign up for a free account.
+  - Visit [Cloudinary](https://cloudinary.com/) and sign up for a free account.
 
 2. Get API Credentials
-- After logging in, go to **Dashboard**.
-- Copy the following credentials:
-  - **Cloud name**
-  - **API Key**
-  - **API Secret**
+  - After logging in, go to **Dashboard**.
+  - Copy the following credentials:
+    - **Cloud name**
+    - **API Key**
+    - **API Secret**
 
 ### 🤖 AI Setup 
 
-Generate **API Key** from GeminiAI
+  Generate **API Key** from GeminiAI
 
 
 ---
