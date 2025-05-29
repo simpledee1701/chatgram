@@ -1,4 +1,4 @@
-# Chatgram 💬🚀
+# Chatgram (Real-time chat Application)
 
 **Chatgram** is a modern, real-time chat application built using Firebase, featuring:
 
@@ -38,18 +38,15 @@
 
 ## 📸 Screenshots
 
-![start](https://github.com/user-attachments/assets/9070e0e3-4ee6-46a1-ac84-4d8cdd10bfca)
-![dashboard](https://github.com/user-attachments/assets/61b5b851-64ed-477a-895e-432c1deb4a87)
-![codechef](https://github.com/user-attachments/assets/f3161a2f-dcdd-4493-9446-5bf1cec801ac)
-![codeforce](https://github.com/user-attachments/assets/6b2c9843-5f25-4c1e-b07a-b7bb4aa591bf)
-![contest](https://github.com/user-attachments/assets/3db50c95-df31-4031-9d12-93ea7c1c2abe)
+![start](https://github.com/user-attachments/assets/87ba9d11-41b4-4af6-a7e3-d3ec14a26f1d)
+![chat_intro](https://github.com/user-attachments/assets/c6d0884d-e2bf-4ad7-a52d-0981fb0b42f3)
+![profile](https://github.com/user-attachments/assets/491e2a3a-5c6c-41d4-9fb7-ef26526fcd12)
+![Screenshot 2025-05-29 134430](https://github.com/user-attachments/assets/6b0a0d10)
+![Screenshot 2025-05-29 134402](https://github.com/user-attachments/assets/9844ae45-b245-4964-9bf9-d87255c869d5)
+-9398-4941-87b3-147470a6cdfe)
 
-## � Quick Start
 
-### Prerequisites
-- Node.js
-- npm
-- Firebase
+---
 
 ## Installation
 
@@ -65,6 +62,8 @@ npm install
 cd app
 npm run dev
 ```
+
+---
 
 ## 🌐 Live Demo
 Experience Chatgram at [https://chatgram-kappa.vercel.app](https://chatgram-kappa.vercel.app)
