@@ -1,137 +1,100 @@
 import React from 'react';
-import { X, Download, FileText, Film, Image, Music, Archive, File } from 'lucide-react';
+import {
+  X, Download, FileText, Film, Image, Music, Archive, File,
+} from 'lucide-react';
 
 const FilePreview = ({ selectedFile, onRemove }) => {
   if (!selectedFile) return null;
 
-  const getFileIcon = (file) => {
-    const type = file.type;
-    
-    if (type.startsWith('image/')) return <Image className="h-6 w-6" />;
-    if (type.startsWith('video/')) return <Film className="h-6 w-6" />;
-    if (type.startsWith('audio/')) return <Music className="h-6 w-6" />;
-    if (type.includes('pdf') || type.includes('document') || type.includes('text')) return <FileText className="h-6 w-6" />;
-    if (type.includes('zip') || type.includes('rar') || type.includes('archive')) return <Archive className="h-6 w-6" />;
-    return <File className="h-6 w-6" />;
+  const fileURL = URL.createObjectURL(selectedFile);
+
+  const getFileIcon = (type) => {
+    if (type.startsWith('image/')) return <Image className="h-6 w-6 text-blue-400" />;
+    if (type.startsWith('video/')) return <Film className="h-6 w-6 text-purple-400" />;
+    if (type.startsWith('audio/')) return <Music className="h-6 w-6 text-pink-400" />;
+    if (type.includes('pdf') || type.includes('text') || type.includes('document')) return <FileText className="h-6 w-6 text-yellow-400" />;
+    if (type.includes('zip') || type.includes('rar')) return <Archive className="h-6 w-6 text-orange-400" />;
+    return <File className="h-6 w-6 text-gray-400" />;
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
+    if (!bytes) return '0 Bytes';
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   };
 
   const isImage = selectedFile.type.startsWith('image/');
   const isVideo = selectedFile.type.startsWith('video/');
   const isAudio = selectedFile.type.startsWith('audio/');
 
+  const handleDownload = () => {
+    const a = document.createElement('a');
+    a.href = fileURL;
+    a.download = selectedFile.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(fileURL);
+  };
+
   return (
-    <div className="mt-3 p-4 bg-gray-800 rounded-lg border border-gray-600">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium text-gray-200">File Preview</h4>
+    <div className="mt-3 rounded-xl border border-gray-700 bg-gray-900 p-4 text-sm text-gray-200 shadow-lg">
+      <div className="flex justify-between items-center mb-3">
+        <span className="font-semibold">File Preview</span>
         <button
           onClick={onRemove}
-          className="p-1 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-full transition-colors"
-          title="Remove file"
+          className="text-gray-400 hover:text-red-500 transition"
+          title="Remove"
         >
-          <X className="h-4 w-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="flex items-start space-x-4">
-        {/* File Preview */}
-        <div className="flex-shrink-0">
-          {isImage && (
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-700">
-              <img
-                src={URL.createObjectURL(selectedFile)}
-                alt="Preview"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
+      <div className="flex gap-4">
+        <div className="w-20 h-20 flex items-center justify-center rounded-lg overflow-hidden bg-gray-800">
+          {isImage && <img src={fileURL} alt="preview" className="w-full h-full object-cover" />}
           {isVideo && (
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center">
-              <video
-                src={URL.createObjectURL(selectedFile)}
-                className="w-full h-full object-cover"
-                muted
-              />
-            </div>
+            <video src={fileURL} muted className="w-full h-full object-cover" />
           )}
-
-          {isAudio && (
-            <div className="w-20 h-20 rounded-lg bg-gray-700 flex items-center justify-center">
-              <Music className="h-8 w-8 text-gray-400" />
-            </div>
-          )}
-
-          {!isImage && !isVideo && !isAudio && (
-            <div className="w-20 h-20 rounded-lg bg-gray-700 flex items-center justify-center">
-              {getFileIcon(selectedFile)}
-            </div>
-          )}
+          {isAudio && <Music className="w-8 h-8 text-pink-400" />}
+          {!isImage && !isVideo && !isAudio && getFileIcon(selectedFile.type)}
         </div>
 
-        {/* File Details */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-200 truncate" title={selectedFile.name}>
+        <div className="flex-1 overflow-hidden">
+          <div className="flex justify-between items-start">
+            <div className="overflow-hidden">
+              <p className="font-medium truncate" title={selectedFile.name}>
                 {selectedFile.name}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {formatFileSize(selectedFile.size)} • {selectedFile.type || 'Unknown type'}
+                {formatFileSize(selectedFile.size)} • {selectedFile.type || 'Unknown'}
               </p>
             </div>
-            
             <button
-              onClick={() => {
-                const url = URL.createObjectURL(selectedFile);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = selectedFile.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              className="ml-2 p-1 text-gray-400 hover:text-violet-400 hover:bg-gray-700 rounded-full transition-colors"
-              title="Download file"
+              onClick={handleDownload}
+              className="text-gray-400 hover:text-indigo-400 transition"
+              title="Download"
             >
-              <Download className="h-4 w-4" />
+              <Download className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Audio Player */}
           {isAudio && (
-            <div className="mt-2">
-              <audio
-                controls
-                className="w-full max-w-xs"
-                style={{ height: '32px' }}
-              >
-                <source src={URL.createObjectURL(selectedFile)} type={selectedFile.type} />
-                Your browser does not support the audio element.
-              </audio>
-            </div>
+            <audio
+              controls
+              className="mt-2 w-full rounded"
+              src={fileURL}
+              style={{ height: '32px' }}
+            />
           )}
 
-          {/* Video Player */}
           {isVideo && (
-            <div className="mt-2">
-              <video
-                controls
-                className="w-full max-w-xs rounded-lg"
-                style={{ maxHeight: '120px' }}
-              >
-                <source src={URL.createObjectURL(selectedFile)} type={selectedFile.type} />
-                Your browser does not support the video element.
-              </video>
-            </div>
+            <video
+              controls
+              src={fileURL}
+              className="mt-2 w-full max-h-40 rounded"
+            />
           )}
         </div>
       </div>

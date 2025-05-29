@@ -509,8 +509,9 @@ const MessagesList = ({
 
                   {/* Display forwarded message indicator */}
                   {message.forwarded && (
-                    <div className="text-xs text-gray-300 mb-1 italic">
-                      Forwarded from {message.originalSender}
+                    <div className="flex items-center text-xs text-white italic mb-1">
+                      <span>forwarded</span>
+                      <span className="ml-1">➜➜</span>
                     </div>
                   )}
 
@@ -528,8 +529,8 @@ const MessagesList = ({
                   {/* Display file attachments */}
                   {message.fileData && (
                     <div className="mb-3">
-                      <MessageFileDisplay 
-                        fileData={message.fileData} 
+                      <MessageFileDisplay
+                        fileData={message.fileData}
                         isCurrentUser={isCurrentUser}
                       />
                     </div>
@@ -664,11 +665,12 @@ const MessagesList = ({
         );
       })}
       <div ref={messagesEndRef} />
+      
       {/* Forward Modal */}
       {showForwardModal && forwardingMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-md mx-4 p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-semibold text-white">Forward Message</h3>
               <button
                 onClick={() => setShowForwardModal(false)}
@@ -678,7 +680,7 @@ const MessagesList = ({
               </button>
             </div>
 
-            <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+            <div className="bg-gray-800/50 rounded-xl p-4">
               <p className="text-gray-200 text-sm">
                 {forwardingMessage.text?.length > 120
                   ? `${forwardingMessage.text.substring(0, 120)}...`
@@ -686,8 +688,8 @@ const MessagesList = ({
               </p>
               {forwardingMessage.fileData && (
                 <div className="mt-2">
-                  <MessageFileDisplay 
-                    fileData={forwardingMessage.fileData} 
+                  <MessageFileDisplay
+                    fileData={forwardingMessage.fileData}
                     isCurrentUser={true}
                     compact={true}
                   />
@@ -708,13 +710,13 @@ const MessagesList = ({
                     <Avatar user={user} size="w-10 h-10" />
                     <div className="ml-3">
                       <p className="text-gray-200 font-medium">{user.name}</p>
-                      <p className="text-gray-500 text-sm">@{user.username}</p>
+                      <p className="text-green-600 font-bold text-sm">@{user.chatgramId}</p>
                     </div>
                   </div>
                 ))}
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowForwardModal(false)}
                 className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800"

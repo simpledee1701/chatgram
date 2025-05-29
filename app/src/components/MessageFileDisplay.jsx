@@ -55,7 +55,7 @@ const MessageFileDisplay = ({ fileData, isCurrentUser }) => {
             src={url}
             alt={name}
             className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-            style={{ maxHeight: '300px' }}
+            style={{ maxHeight: '200px' }}
             onClick={() => setShowFullImage(true)}
           />
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -107,7 +107,7 @@ const MessageFileDisplay = ({ fileData, isCurrentUser }) => {
           <video
             controls
             className="w-full h-auto"
-            style={{ maxHeight: '300px' }}
+            style={{ maxHeight: '50px' }}
           >
             <source src={url} type={type} />
             Your browser does not support the video tag.
