@@ -1,7 +1,7 @@
 import React from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { FaUser, FaRobot, FaSignOutAlt,FaComments} from 'react-icons/fa';
+import { FaUser, FaRobot, FaSignOutAlt, FaComments } from 'react-icons/fa';
 import Profile from './Profile';
 
 const Sidebar = ({ currentUser, onNavigate }) => {
@@ -21,7 +21,7 @@ const Sidebar = ({ currentUser, onNavigate }) => {
 
   return (
     <>
-      <div className="w-16 bg-gray-950 flex flex-col items-center py-6 shadow-xl z-20 h-full">
+      <div className="w-16 bg-black flex flex-col items-center py-6 shadow-xl z-20 h-full border-r border-gray-800">
         <nav className="flex flex-col space-y-6 flex-grow mt-4">
 
           {/* Chats Button */}
@@ -31,10 +31,10 @@ const Sidebar = ({ currentUser, onNavigate }) => {
               if (onNavigate) onNavigate('chat');
             }}
             className={`p-3 rounded-full transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-indigo-500
-                        ${activeNav === 'chat' ? 'bg-indigo-600' : 'hover:bg-indigo-600'}`}
+                        ${activeNav === 'chat' ? 'bg-indigo-600' : 'hover:bg-gray-800'}`}
             title="Chats"
           >
-            <FaComments className={`h-5 w-5 ${activeNav === 'chat' ? 'text-white' : 'text-gray-300 group-hover:text-white'}`} />
+            <FaComments className={`h-5 w-5 ${activeNav === 'chat' ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
           </button>
           
           {/* Profile Button */}
@@ -44,10 +44,10 @@ const Sidebar = ({ currentUser, onNavigate }) => {
               setShowProfile(true);
             }}
             className={`p-3 rounded-full transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-indigo-500
-                        ${activeNav === 'profile' ? 'bg-indigo-600' : 'hover:bg-indigo-600'}`}
+                        ${activeNav === 'profile' ? 'bg-indigo-600' : 'hover:bg-gray-800'}`}
             title="Profile"
           >
-            <FaUser className={`h-5 w-5 ${activeNav === 'profile' ? 'text-white' : 'text-gray-300 group-hover:text-white'}`} />
+            <FaUser className={`h-5 w-5 ${activeNav === 'profile' ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
           </button>
 
           {/* AI Assistant Button */}
@@ -57,10 +57,10 @@ const Sidebar = ({ currentUser, onNavigate }) => {
               if (onNavigate) onNavigate('ai');
             }}
             className={`p-3 rounded-full transition-colors duration-200 transform hover:scale-110 group focus:outline-none focus:ring-2 focus:ring-indigo-500
-                        ${activeNav === 'ai' ? 'bg-indigo-600' : 'hover:bg-indigo-600'}`}
+                        ${activeNav === 'ai' ? 'bg-indigo-600' : 'hover:bg-gray-800'}`}
             title="AI Assistant"
           >
-            <FaRobot className={`h-5 w-5 ${activeNav === 'ai' ? 'text-white' : 'text-gray-300 group-hover:text-white'}`} />
+            <FaRobot className={`h-5 w-5 ${activeNav === 'ai' ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
           </button>
         </nav>
 
