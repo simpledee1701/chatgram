@@ -12,12 +12,12 @@
 
 ## 🔧 Tech Stack
 
-- **Frontend:** React.js
-- **Backend/Serverless:** Firebase Functions (Optional for AI assistant)
+- **Frontend:** React.js, TailwindCSS
+- **Backend/Serverless:** Firebase Functions (Optional for AI assistant), Node.js
 - **Database:** Firebase Firestore + Realtime Database
 - **Authentication:** Firebase Auth (Google Sign-In or email/password)
 - **AI Integration:** OpenAI or custom summarization models (for summarizer and assistant)
-- **Media Storage:** Firebase Storage
+- **Media Storage:** Cloudinary
 
 ---
 
@@ -27,8 +27,8 @@
 - 🔒 User authentication (Google sign-in or email/password)
 - 💬 One-to-one and group chat support
 - 😀 Emoji picker and messaging
-- 📷 Share photos and videos in chat
-- 📝 Real-time message updates using Firestore and Realtime Database
+- 📷 Share photos and videos in chat with in built audio recording
+- 📝 Real-time message updates using Firestore and Realtime Database with real time status update (Online | Offline | Typing | Last seen)
 
 ### 🧠 AI-Powered Features
 - 🧾 **Chat Summarizer** – Get summaries of long conversations
@@ -52,6 +52,53 @@
 
 
 ---
+
+## 🚀 Project Setup: Firebase + Cloudinary
+
+This guide will help you set up Firebase and Cloudinary for this project. The project uses:
+
+- **Firebase** – for authentication, real-time database, Firestore, and storage.
+- **Cloudinary** – for optimized image/video uploads and delivery.
+-  Attached a sample .env file for your reference
+
+### 🔥 Firebase Setup
+
+1. Create a Firebase Project
+- Visit [Firebase Console](https://console.firebase.google.com/).
+- Click **Add project** → Enter project name → Continue with default settings.
+
+2. Register Your Web App
+- In your Firebase dashboard, go to **Project Overview > Web** (`</>` icon).
+- Register the app and copy the Firebase configuration snippet.
+
+3. Enable Authentication
+- Go to **Authentication > Sign-in method**.
+- Enable **Google Sign-In** or other desired providers.
+- Add your app's domain under **Authorized domains** (e.g., `localhost`, `yourdomain.com`).
+
+4. Enable Firestore or Realtime Database
+- Go to **Firestore Database** or **Realtime Database**.
+- Click **Create database** → Start in **test mode** (for development).
+
+### ☁️ Cloudinary Setup
+
+1. Create an Account
+- Visit [Cloudinary](https://cloudinary.com/) and sign up for a free account.
+
+2. Get API Credentials
+- After logging in, go to **Dashboard**.
+- Copy the following credentials:
+  - **Cloud name**
+  - **API Key**
+  - **API Secret**
+
+### 🤖 AI Setup 
+
+Generate **API Key** from GeminiAI
+
+
+---
+
 
 ## Installation
 
