@@ -665,7 +665,7 @@ const MessagesList = ({
         );
       })}
       <div ref={messagesEndRef} />
-      
+
       {/* Forward Modal */}
       {showForwardModal && forwardingMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">

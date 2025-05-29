@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import Avatar from './Avatar';
 import ChatSummarizerModal from './ChatSummarizerModal';
+import { EllipsisVerticalIcon, CogIcon, UsersIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 const ChatHeader = ({
   selectedUser,
@@ -16,6 +17,24 @@ const ChatHeader = ({
   const [showSummarizer, setShowSummarizer] = useState(false);
   const [currentGroup, setCurrentGroup] = useState(selectedGroup);
   const db = getFirestore();
+  const optionsRef = useRef(null); // Ref for options menu
+
+  // Handle outside click for options menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (optionsRef.current && !optionsRef.current.contains(event.target)) {
+        setShowOptions(false);
+      }
+    };
+
+    if (showOptions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showOptions]);
 
   // Listen for real-time updates to the selected group
   useEffect(() => {
@@ -33,21 +52,19 @@ const ChatHeader = ({
 
   useEffect(() => {
     setCurrentGroup(selectedGroup);
-  }, [selectedGroup])
+  }, [selectedGroup]);
 
   const getStatusText = () => {
     if (currentGroup) {
-      return `${currentGroup.members.length} members`;
+      return `${currentGroup.members?.length || 0} members • ${currentGroup.members?.some(m => m.uid === currentUser.uid && m.isAdmin) ? 'Admin' : 'Member'}`;
     }
 
     if (!selectedUser) return '';
 
-    // Typing status
     if (typingStatus[selectedUser.uid]?.isTyping) {
       return 'typing...';
     }
 
-    // Online/offline status
     const status = userStatus[selectedUser.uid]?.status;
     if (status === 'online') {
       return 'Online';
@@ -74,18 +91,19 @@ const ChatHeader = ({
   };
 
   return (
-    <div className={`flex items-center justify-between p-4 border-b ${selectedUser || selectedGroup || selectedAI ? 'bg-gray-900 border-gray-900' : 'bg-gray-950 border-black'}`}>
-
-      <div className="flex items-center">
+    <div className={`flex items-center justify-between p-4 border-b ${selectedUser || selectedGroup || selectedAI ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-950' : 'bg-gray-50 dark:bg-gray-950 border-gray-100 dark:border-gray-950'}`}>
+      <div className="flex items-center space-x-3">
         {currentGroup ? (
           <>
-            <div className="bg-gray-600 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-              👥
+            <div className="relative">
+              <div className="bg-indigo-100 dark:bg-indigo-900 rounded-full h-10 w-10 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
+                <UsersIcon className="h-5 w-5" />
+              </div>
             </div>
             <div>
-              <h2 className="text-white font-semibold">{currentGroup.name}</h2>
-              <p className="text-xs text-gray-400">
-                {currentGroup.members.length} members
+              <h2 className="text-sm font-medium text-gray-900 dark:text-white">{currentGroup.name}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {getStatusText()}
               </p>
             </div>
           </>
@@ -97,57 +115,65 @@ const ChatHeader = ({
               isTyping={typingStatus[selectedUser?.uid]?.isTyping}
               size="w-10 h-10"
             />
-            <div className="ml-3">
-              <h2 className="text-white font-semibold">{selectedUser.name}</h2>
-              <p className="text-xs text-gray-400">{getStatusText()}</p>
+            <div>
+              <h2 className="text-sm font-medium text-gray-900 dark:text-white">{selectedUser.name}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{getStatusText()}</p>
             </div>
           </>
         ) : selectedAI ? (
           <>
-            <div className="bg-indigo-500 rounded-full h-10 w-10 flex items-center justify-center text-white text-lg font-bold mr-3">
-              🤖
+            <div className="bg-purple-100 dark:bg-purple-900 rounded-full h-10 w-10 flex items-center justify-center text-purple-600 dark:text-purple-300">
+              <SparklesIcon className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-white font-semibold">{selectedAI.name || 'AI Assistant'}</h2>
-              <p className="text-xs text-gray-400">AI Chat</p>
+              <h2 className="text-sm font-medium text-gray-900 dark:text-white">{selectedAI.name || 'AI Assistant'}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Always available</p>
             </div>
           </>
         ) : null}
       </div>
 
-      
-      <div className="flex items-center gap-4">
-        {(selectedUser || currentGroup || selectedAI) && (
-          <button
-            onClick={() => setShowSummarizer(true)}
-            className="p-2 hover:bg-gray-700 rounded flex items-center gap-2"
-            title="Generate chat summary"
-          >
-            <span>📝</span>
-            <span className="hidden md:inline">Summarize</span>
-          </button>
-        )}
-
-        {currentGroup && (
+      <div className="flex items-center space-x-2">
+        {(currentGroup || selectedUser) && (
           <div className="relative">
             <button
               onClick={() => setShowOptions(!showOptions)}
-              className="text-gray-400 hover:text-white p-2"
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
-              ⚙️
+              <EllipsisVerticalIcon className="h-5 w-5" />
             </button>
 
             {showOptions && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
-                <button
-                  onClick={() => {
-                    onGroupSettings();
-                    setShowOptions(false);
-                  }}
-                  className="w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-700"
-                >
-                  Group Settings
-                </button>
+              <div
+                ref={optionsRef}
+                className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none divide-y divide-gray-100 dark:divide-gray-700"
+              >
+                <div className="py-1">
+                  {currentGroup && (
+                    <button
+                      onClick={() => {
+                        onGroupSettings();
+                        setShowOptions(false);
+                      }}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                    >
+                      <CogIcon className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
+                      Group settings
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowSummarizer(true);
+                      setShowOptions(false);
+                    }}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Summarize chat
+                  </button>
+                </div>
               </div>
             )}
           </div>
