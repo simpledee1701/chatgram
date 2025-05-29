@@ -48,7 +48,7 @@
 
 ### Chat Page
 
-![chat_intro](![image](https://github.com/user-attachments/assets/d705a6d4-9cac-42f6-9978-fbb479de94d3)
+![image](https://github.com/user-attachments/assets/d705a6d4-9cac-42f6-9978-fbb479de94d3)
 
 
 ---
